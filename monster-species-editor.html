@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Species Manager - Local Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background-color: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #5a67d8;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background-color: #48bb78;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #38a169;
+        }
+
+        .btn-warning {
+            background-color: #ed8936;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #f56565;
+            color: white;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .species-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .species-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .species-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .species-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .species-name {
+            font-size: 1.4em;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+
+        .species-category {
+            background-color: #edf2f7;
+            color: #4a5568;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .species-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background-color: #f7fafc;
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .stat-value {
+            color: #2d3748;
+            font-weight: bold;
+        }
+
+        .species-elements {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .element-tag {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+
+        .weakness {
+            background-color: #fed7d7;
+            color: #c53030;
+        }
+
+        .strength {
+            background-color: #c6f6d5;
+            color: #2f855a;
+        }
+
+        .species-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #a0aec0;
+        }
+
+        .close:hover {
+            color: #4a5568;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .file-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f7fafc;
+            border-radius: 6px;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #2d3748;
+            color: white;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        #dropZone {
+            border: 2px dashed #cbd5e0;
+            border-radius: 6px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        #dropZone.dragover {
+            border-color: #667eea;
+            background-color: #f0f4f8;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .species-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🐉 Monster Species Manager</h1>
+            <p>ローカルJSONファイル編集ツール - データベース不要のシンプル管理</p>
+        </div>
+
+        <!-- ファイル操作コントロール -->
+        <div class="file-controls">
+            <input type="file" id="fileInput" accept=".json" style="display: none;">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                📁 JSONファイルを読み込み
+            </button>
+            <button class="btn btn-success" onclick="saveToFile()">
+                💾 JSONファイルに保存
+            </button>
+            <button class="btn btn-warning" onclick="exportBackup()">
+                📤 バックアップ作成
+            </button>
+            <span id="fileStatus">ファイル未読み込み</span>
+        </div>
+
+        <!-- ドラッグ&ドロップエリア -->
+        <div id="dropZone">
+            <p>📄 JSONファイルをここにドラッグ&ドロップ</p>
+            <p style="font-size: 0.9em; color: #666; margin-top: 10px;">
+                または上の「JSONファイルを読み込み」ボタンをクリック
+            </p>
+        </div>
+
+        <!-- 操作コントロール -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="openAddModal()">
+                ➕ 新しい種族を追加
+            </button>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="🔍 種族名で検索..." 
+                       oninput="filterSpecies()">
+            </div>
+            <select id="categoryFilter" onchange="filterSpecies()">
+                <option value="">全カテゴリ</option>
+                <option value="Beast">Beast</option>
+                <option value="Dragon">Dragon</option>
+                <option value="Elemental">Elemental</option>
+                <option value="Humanoid">Humanoid</option>
+                <option value="Undead">Undead</option>
+                <option value="Plant">Plant</option>
+                <option value="Machine">Machine</option>
+                <option value="Spirit">Spirit</option>
+            </select>
+        </div>
+
+        <!-- 種族一覧 -->
+        <div id="speciesGrid" class="species-grid">
+            <!-- 動的に生成される種族カード -->
+        </div>
+
+        <!-- 統計情報 -->
+        <div id="statistics" style="margin-top: 30px; padding: 20px; background: white; border-radius: 10px;">
+            <h3>📊 統計情報</h3>
+            <div id="statsContent"></div>
+        </div>
+    </div>
+
+    <!-- 種族編集モーダル -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">種族を編集</h2>
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            
+            <form id="speciesForm">
+                <div class="form-group">
+                    <label class="form-label">種族名 *</label>
+                    <input type="text" id="speciesName" class="form-input" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">説明</label>
+                    <textarea id="speciesDescription" class="form-textarea" 
+                              placeholder="この種族の特徴や背景を入力..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">HP *</label>
+                        <input type="number" id="speciesHP" class="form-input" min="1" max="999" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">ATK *</label>
+                        <input type="number" id="speciesATK" class="form-input" min="0" max="999" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">DEF *</label>
+                        <input type="number" id="speciesDEF" class="form-input" min="0" max="999" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">SPD *</label>
+                        <input type="number" id="speciesSPD" class="form-input" min="0" max="999" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">弱点 *</label>
+                        <select id="speciesWeakness" class="form-select" required>
+                            <option value="">選択してください</option>
+                            <option value="Fire">Fire</option>
+                            <option value="Water">Water</option>
+                            <option value="Ice">Ice</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Earth">Earth</option>
+                            <option value="Air">Air</option>
+                            <option value="Light">Light</option>
+                            <option value="Dark">Dark</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">強み *</label>
+                        <select id="speciesStrength" class="form-select" required>
+                            <option value="">選択してください</option>
+                            <option value="Fire">Fire</option>
+                            <option value="Water">Water</option>
+                            <option value="Ice">Ice</option>
+                            <option value="Electric">Electric</option>
+                            <option value="Earth">Earth</option>
+                            <option value="Air">Air</option>
+                            <option value="Light">Light</option>
+                            <option value="Dark">Dark</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">レアリティ *</label>
+                        <select id="speciesRarity" class="form-select" required>
+                            <option value="">選択してください</option>
+                            <option value="Common">Common</option>
+                            <option value="Uncommon">Uncommon</option>
+                            <option value="Rare">Rare</option>
+                            <option value="Epic">Epic</option>
+                            <option value="Legendary">Legendary</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">カテゴリ *</label>
+                        <select id="speciesCategory" class="form-select" required>
+                            <option value="">選択してください</option>
+                            <option value="Beast">Beast</option>
+                            <option value="Dragon">Dragon</option>
+                            <option value="Elemental">Elemental</option>
+                            <option value="Humanoid">Humanoid</option>
+                            <option value="Undead">Undead</option>
+                            <option value="Plant">Plant</option>
+                            <option value="Machine">Machine</option>
+                            <option value="Spirit">Spirit</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 30px;">
+                    <button type="button" class="btn btn-primary" onclick="saveSpecies()">
+                        💾 保存
+                    </button>
+                    <button type="button" class="btn" onclick="closeModal()" 
+                            style="background-color: #e2e8f0; color: #4a5568;">
+                        キャンセル
+                    </button>
+                    <button type="button" class="btn btn-danger" id="deleteBtn" 
+                            onclick="deleteCurrentSpecies()" style="margin-left: auto;">
+                        🗑️ 削除
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ステータスバー -->
+    <div class="status-bar">
+        <div id="statusLeft">準備完了</div>
+        <div id="statusRight">
+            <span id="speciesCount">種族数: 0</span> | 
+            <span id="lastSaved">未保存</span>
+        </div>
+    </div>
+
+    <script>
+        // グローバル変数
+        let speciesData = [];
+        let currentEditingIndex = -1;
+        let filteredData = [];
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadSampleData();
+            updateDisplay();
+        });
+
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // ファイル入力
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            
+            // ドラッグ&ドロップ
+            const dropZone = document.getElementById('dropZone');
+            dropZone.addEventListener('dragover', handleDragOver);
+            dropZone.addEventListener('drop', handleFileDrop);
+            dropZone.addEventListener('dragleave', handleDragLeave);
+        }
+
+        // サンプルデータ読み込み
+        function loadSampleData() {
+            speciesData = [
+                {
+                    id: "flame_dragon_001",
+                    name: "Flame Dragon",
+                    description: "A powerful fire-breathing dragon with ancient wisdom",
+                    basicStatus: { maxHP: 150, atk: 120, def: 80, spd: 70 },
+                    weakness: "Ice",
+                    strength: "Fire",
+                    rarity: "Epic",
+                    category: "Dragon",
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: "forest_wolf_001",
+                    name: "Forest Wolf",
+                    description: "A swift woodland predator with keen senses",
+                    basicStatus: { maxHP: 80, atk: 75, def: 55, spd: 90 },
+                    weakness: "Fire",
+                    strength: "Earth",
+                    rarity: "Common",
+                    category: "Beast",
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: "crystal_golem_001",
+                    name: "Crystal Golem",
+                    description: "A mystical construct made of living crystal",
+                    basicStatus: { maxHP: 200, atk: 60, def: 120, spd: 30 },
+                    weakness: "Dark",
+                    strength: "Light",
+                    rarity: "Rare",
+                    category: "Elemental",
+                    createdAt: new Date().toISOString()
+                }
+            ];
+            updateFileStatus('サンプルデータ読み込み済み');
+        }
+
+        // ファイル選択処理
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                readJSONFile(file);
+            }
+        }
+
+        // ドラッグオーバー処理
+        function handleDragOver(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').classList.add('dragover');
+        }
+
+        // ドラッグリーブ処理
+        function handleDragLeave(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').classList.remove('dragover');
+        }
+
+        // ファイルドロップ処理
+        function handleFileDrop(event) {
+            event.preventDefault();
+            document.getElementById('dropZone').classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                readJSONFile(files[0]);
+            }
+        }
+
+        // JSONファイル読み込み
+        function readJSONFile(file) {
+            if (!file.name.endsWith('.json')) {
+                alert('JSONファイルを選択してください');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (Array.isArray(data)) {
+                        speciesData = data;
+                        updateDisplay();
+                        updateFileStatus(`${file.name} 読み込み完了`);
+                        updateStatus('ファイル読み込み成功');
+                    } else {
+                        alert('データ形式が正しくありません（配列である必要があります）');
+                    }
+                } catch (error) {
+                    alert('JSONファイルの解析に失敗しました: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ファイル保存
+        function saveToFile() {
+            const dataStr = JSON.stringify(speciesData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'monster-species-' + new Date().toISOString().split('T')[0] + '.json';
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            updateStatus('ファイル保存完了');
+            updateLastSaved();
+        }
+
+        // バックアップ作成
+        function exportBackup() {
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const dataStr = JSON.stringify(speciesData, null, 2);
+            const blob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `monster-species-backup-${timestamp}.json`;
+            a.click();
+            
+            URL.revokeObjectURL(url);
+            updateStatus('バックアップ作成完了');
+        }
+
+        // 表示更新
+        function updateDisplay() {
+            filterSpecies();
+            updateStatistics();
+            updateSpeciesCount();
+        }
+
+        // 種族フィルタリング
+        function filterSpecies() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+
+            filteredData = speciesData.filter(species => {
+                const matchesSearch = species.name.toLowerCase().includes(searchTerm) ||
+                                    species.description.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || species.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            renderSpeciesGrid();
+        }
+
+        // 種族グリッド描画
+        function renderSpeciesGrid() {
+            const grid = document.getElementById('speciesGrid');
+            
+            if (filteredData.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+                        <p style="font-size: 1.2em;">🔍 該当する種族が見つかりません</p>
+                        <p>検索条件を変更するか、新しい種族を追加してください</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filteredData.map((species, index) => `
+                <div class="species-card">
+                    <div class="species-header">
+                        <div>
+                            <div class="species-name">${species.name}</div>
+                            <div class="species-category">${species.category}</div>
+                        </div>
+                        <div class="element-tag ${species.rarity.toLowerCase()}" 
+                             style="background-color: ${getRarityColor(species.rarity)};">
+                            ${species.rarity}
+                        </div>
+                    </div>
+                    
+                    <div class="species-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">HP</span>
+                            <span class="stat-value">${species.basicStatus.maxHP}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">ATK</span>
+                            <span class="stat-value">${species.basicStatus.atk}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">DEF</span>
+                            <span class="stat-value">${species.basicStatus.def}</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">SPD</span>
+                            <span class="stat-value">${species.basicStatus.spd}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="species-elements">
+                        <div class="element-tag weakness">弱点: ${species.weakness}</div>
+                        <div class="element-tag strength">強み: ${species.strength}</div>
+                    </div>
+                    
+                    ${species.description ? `
+                        <div style="margin: 10px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 0.9em; color: #666;">
+                            ${species.description}
+                        </div>
+                    ` : ''}
+                    
+                    <div class="species-actions">
+                        <button class="btn btn-primary" onclick="editSpecies(${speciesData.indexOf(species)})">
+                            ✏️ 編集
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteSpecies(${speciesData.indexOf(species)})">
+                            🗑️ 削除
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // レアリティ色取得
+        function getRarityColor(rarity) {
+            const colors = {
+                'Common': '#e2e8f0',
+                'Uncommon': '#d69e2e',
+                'Rare': '#3182ce',
+                'Epic': '#805ad5',
+                'Legendary': '#e53e3e'
+            };
+            return colors[rarity] || '#e2e8f0';
+        }
+
+        // 統計情報更新
+        function updateStatistics() {
+            const stats = document.getElementById('statsContent');
+            const totalSpecies = speciesData.length;
+            const categoryCount = {};
+            const rarityCount = {};
+            let totalHP = 0;
+
+            speciesData.forEach(species => {
+                categoryCount[species.category] = (categoryCount[species.category] || 0) + 1;
+                rarityCount[species.rarity] = (rarityCount[species.rarity] || 0) + 1;
+                totalHP += species.basicStatus.maxHP;
+            });
+
+            const avgHP = totalSpecies > 0 ? Math.round(totalHP / totalSpecies) : 0;
+
+            stats.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                    <div>
+                        <h4>📊 基本統計</h4>
+                        <p>総種族数: ${totalSpecies}</p>
+                        <p>平均HP: ${avgHP}</p>
+                        <p>フィルター結果: ${filteredData.length}</p>
+                    </div>
+                    <div>
+                        <h4>🏷️ カテゴリ別</h4>
+                        ${Object.entries(categoryCount).map(([cat, count]) => 
+                            `<p>${cat}: ${count}</p>`
+                        ).join('')}
+                    </div>
+                    <div>
+                        <h4>💎 レアリティ別</h4>
+                        ${Object.entries(rarityCount).map(([rarity, count]) => 
+                            `<p>${rarity}: ${count}</p>`
+                        ).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        // モーダル関連
+        function openAddModal() {
+            currentEditingIndex = -1;
+            document.getElementById('modalTitle').textContent = '新しい種族を追加';
+            document.getElementById('deleteBtn').style.display = 'none';
+            clearForm();
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function editSpecies(index) {
+            currentEditingIndex = index;
+            const species = speciesData[index];
+            document.getElementById('modalTitle').textContent = '種族を編集';
+            document.getElementById('deleteBtn').style.display = 'block';
+            populateForm(species);
+            document.getElementById('editModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+            clearForm();
+        }
+
+        function clearForm() {
+            document.getElementById('speciesForm').reset();
+        }
+
+        function populateForm(species) {
+            document.getElementById('speciesName').value = species.name;
+            document.getElementById('speciesDescription').value = species.description || '';
+            document.getElementById('speciesHP').value = species.basicStatus.maxHP;
+            document.getElementById('speciesATK').value = species.basicStatus.atk;
+            document.getElementById('speciesDEF').value = species.basicStatus.def;
+            document.getElementById('speciesSPD').value = species.basicStatus.spd;
+            document.getElementById('speciesWeakness').value = species.weakness;
+            document.getElementById('speciesStrength').value = species.strength;
+            document.getElementById('speciesRarity').value = species.rarity;
+            document.getElementById('speciesCategory').value = species.category;
+        }
+
+        function saveSpecies() {
+            // フォーム検証
+            const form = document.getElementById('speciesForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const speciesData_new = {
+                id: currentEditingIndex === -1 ? 
+                    'species_' + Date.now() : 
+                    speciesData[currentEditingIndex].id,
+                name: document.getElementById('speciesName').value,
+                description: document.getElementById('speciesDescription').value,
+                basicStatus: {
+                    maxHP: parseInt(document.getElementById('speciesHP').value),
+                    atk: parseInt(document.getElementById('speciesATK').value),
+                    def: parseInt(document.getElementById('speciesDEF').value),
+                    spd: parseInt(document.getElementById('speciesSPD').value)
+                },
+                weakness: document.getElementById('speciesWeakness').value,
+                strength: document.getElementById('speciesStrength').value,
+                rarity: document.getElementById('speciesRarity').value,
+                category: document.getElementById('speciesCategory').value,
+                createdAt: currentEditingIndex === -1 ? 
+                    new Date().toISOString() : 
+                    speciesData[currentEditingIndex].createdAt,
+                updatedAt: new Date().toISOString()
+            };
+
+            if (currentEditingIndex === -1) {
+                speciesData.push(speciesData_new);
+                updateStatus('新しい種族を追加しました');
+            } else {
+                speciesData[currentEditingIndex] = speciesData_new;
+                updateStatus('種族情報を更新しました');
+            }
+
+            closeModal();
+            updateDisplay();
+        }
+
+        function deleteCurrentSpecies() {
+            if (currentEditingIndex === -1) return;
+            
+            if (confirm('この種族を削除しますか？この操作は取り消せません。')) {
+                const deletedName = speciesData[currentEditingIndex].name;
+                speciesData.splice(currentEditingIndex, 1);
+                closeModal();
+                updateDisplay();
+                updateStatus(`種族「${deletedName}」を削除しました`);
+            }
+        }
+
+        function deleteSpecies(index) {
+            if (confirm('この種族を削除しますか？この操作は取り消せません。')) {
+                const deletedName = speciesData[index].name;
+                speciesData.splice(index, 1);
+                updateDisplay();
+                updateStatus(`種族「${deletedName}」を削除しました`);
+            }
+        }
+
+        // ユーティリティ関数
+        function updateStatus(message) {
+            document.getElementById('statusLeft').textContent = message;
+            setTimeout(() => {
+                document.getElementById('statusLeft').textContent = '準備完了';
+            }, 3000);
+        }
+
+        function updateFileStatus(status) {
+            document.getElementById('fileStatus').textContent = status;
+        }
+
+        function updateSpeciesCount() {
+            document.getElementById('speciesCount').textContent = `種族数: ${speciesData.length}`;
+        }
+
+        function updateLastSaved() {
+            const now = new Date().toLocaleString();
+            document.getElementById('lastSaved').textContent = `最終保存: ${now}`;
+        }
+
+        // モーダルの外側をクリックで閉じる
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // キーボードショートカット
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 's') {
+                event.preventDefault();
+                saveToFile();
+            }
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>

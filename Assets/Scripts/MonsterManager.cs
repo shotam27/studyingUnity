@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using SpeciesManagement;
 
 public class MonsterManager : MonoBehaviour
 {
@@ -14,8 +15,19 @@ public class MonsterManager : MonoBehaviour
     // シングルトンパターン
     public static MonsterManager Instance { get; private set; }
 
-    // プロパティ
-    public List<MonsterType> AllMonsterTypes => new List<MonsterType>(allMonsterTypes);
+    // プロパティ - MonsterSpeciesManagerと連携
+    public List<MonsterType> AllMonsterTypes 
+    { 
+        get 
+        {
+            // MonsterSpeciesManagerが存在する場合はそちらを優先
+            if (MonsterSpeciesManager.Instance != null)
+            {
+                return MonsterSpeciesManager.Instance.AllSpecies;
+            }
+            return new List<MonsterType>(allMonsterTypes);
+        }
+    }
     public List<Monster> PlayerMonsters => new List<Monster>(playerMonsters);
     public int MaxPartySize => maxPartySize;
 

@@ -242,28 +242,15 @@ namespace ForDev
         {
             Debug.Log("Creating sample species for development...");
 
-            // MonsterManagerが存在しない場合は作成を試みる
-            if (MonsterManager.Instance == null)
+            // MonsterSpeciesManagerから直接サンプルを作成
+            if (SpeciesManagement.MonsterSpeciesManager.Instance != null)
             {
-                Debug.LogWarning("MonsterManager not found, cannot create sample species");
-                return;
-            }
-
-            // サンプル作成者を探す
-            var sampleCreator = FindObjectOfType<SampleDataCreator>();
-            if (sampleCreator != null)
-            {
-                // リフレクションで一時的なMonsterTypeを作成
-                var method = typeof(SampleDataCreator).GetMethod("CreateTemporaryMonsterTypes", 
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                method?.Invoke(sampleCreator, null);
-
-                Debug.Log("Sample species creation attempted");
-                RefreshSpeciesList();
+                SpeciesManagement.MonsterSpeciesManager.Instance.CreateSampleSpecies();
+                RefreshSpeciesList(); // リスト更新
             }
             else
             {
-                Debug.LogWarning("SampleDataCreator not found");
+                Debug.LogWarning("MonsterSpeciesManager not found, cannot create sample species");
             }
         }
 

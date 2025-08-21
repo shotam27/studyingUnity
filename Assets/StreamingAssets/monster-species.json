@@ -1,0 +1,82 @@
+[
+  {
+    "id": "flame_dragon_001",
+    "name": "Flame Dragon",
+    "description": "A powerful fire-breathing dragon with ancient wisdom",
+    "basicStatus": {
+      "maxHP": 150,
+      "atk": 120,
+      "def": 80,
+      "spd": 70
+    },
+    "weakness": "Ice",
+    "strength": "Fire",
+    "rarity": "Epic",
+    "category": "Dragon",
+    "createdAt": "2025-08-21T10:00:00.000Z"
+  },
+  {
+    "id": "forest_wolf_001",
+    "name": "Forest Wolf",
+    "description": "A swift woodland predator with keen senses",
+    "basicStatus": {
+      "maxHP": 80,
+      "atk": 75,
+      "def": 55,
+      "spd": 90
+    },
+    "weakness": "Fire",
+    "strength": "Earth",
+    "rarity": "Common",
+    "category": "Beast",
+    "createdAt": "2025-08-21T10:00:00.000Z"
+  },
+  {
+    "id": "crystal_golem_001",
+    "name": "Crystal Golem",
+    "description": "A mystical construct made of living crystal",
+    "basicStatus": {
+      "maxHP": 200,
+      "atk": 60,
+      "def": 120,
+      "spd": 30
+    },
+    "weakness": "Dark",
+    "strength": "Light",
+    "rarity": "Rare",
+    "category": "Elemental",
+    "createdAt": "2025-08-21T10:00:00.000Z"
+  },
+  {
+    "id": "thunder_bird_001",
+    "name": "Thunder Bird",
+    "description": "An aerial predator that commands lightning",
+    "basicStatus": {
+      "maxHP": 100,
+      "atk": 90,
+      "def": 50,
+      "spd": 110
+    },
+    "weakness": "Earth",
+    "strength": "Electric",
+    "rarity": "Uncommon",
+    "category": "Beast",
+    "createdAt": "2025-08-21T10:00:00.000Z"
+  },
+  {
+    "id": "ice_bear_001",
+    "name": "Ice Bear",
+    "description": "A massive bear adapted to frozen wastelands",
+    "basicStatus": {
+      "maxHP": 140,
+      "atk": 85,
+      "def": 90,
+      "spd": 40
+    },
+    "weakness": "Fire",
+    "strength": "Ice",
+    "rarity": "Uncommon",
+    "category": "Beast",
+    "createdAt": "2025-08-21T10:00:00.000Z"
+  }
+]
