@@ -36,20 +36,30 @@ namespace SpeciesManagement
         
         private void Awake()
         {
+            Debug.Log("=== MonsterSpeciesManager Awake ===");
             if (Instance == null)
             {
                 Instance = this;
                 DontDestroyOnLoad(gameObject);
+                Debug.Log("MonsterSpeciesManager instance created");
                 
                 if (loadOnStart)
                 {
+                    Debug.Log("Loading species data on start");
                     LoadSpeciesData();
+                }
+                else
+                {
+                    Debug.Log("LoadOnStart is disabled, creating sample data");
+                    CreateDefaultSampleSpecies();
                 }
             }
             else
             {
+                Debug.Log("MonsterSpeciesManager instance already exists, destroying duplicate");
                 Destroy(gameObject);
             }
+            Debug.Log("=== End MonsterSpeciesManager Awake ===");
         }
         
         #region CRUD Operations
@@ -208,12 +218,15 @@ namespace SpeciesManagement
         /// </summary>
         public void LoadSpeciesData()
         {
+            Debug.Log("=== LoadSpeciesData Debug ===");
             try
             {
                 string jsonPath = GetJsonFilePath();
+                Debug.Log($"JSON file path: {jsonPath}");
                 
                 if (File.Exists(jsonPath))
                 {
+                    Debug.Log("JSON file found, loading from JSON");
                     string json = File.ReadAllText(jsonPath);
                     LoadFromJsonString(json);
                     Debug.Log($"Loaded species data from: {jsonPath}");
@@ -227,8 +240,10 @@ namespace SpeciesManagement
             catch (System.Exception ex)
             {
                 Debug.LogError($"Failed to load species data: {ex.Message}");
-                LoadFromResources(); // フォールバック
+                Debug.Log("Creating default sample species as fallback");
+                CreateDefaultSampleSpecies();
             }
+            Debug.Log("=== End LoadSpeciesData Debug ===");
         }
         
         /// <summary>
@@ -367,12 +382,25 @@ namespace SpeciesManagement
         /// </summary>
         private void LoadFromResources()
         {
+            Debug.Log("=== LoadFromResources Debug ===");
             MonsterType[] loadedTypes = Resources.LoadAll<MonsterType>("MonsterTypes");
+            Debug.Log($"Found {loadedTypes.Length} MonsterTypes in Resources");
+            
             registeredSpecies.Clear();
             registeredSpecies.AddRange(loadedTypes);
             
-            Debug.Log($"Loaded {registeredSpecies.Count} species from Resources");
-            OnSpeciesListChanged?.Invoke();
+            // Resourcesに何もない場合はサンプルデータを作成
+            if (registeredSpecies.Count == 0)
+            {
+                Debug.Log("No MonsterTypes found in Resources, creating default sample species");
+                CreateDefaultSampleSpecies();
+            }
+            else
+            {
+                Debug.Log($"Loaded {registeredSpecies.Count} species from Resources");
+                OnSpeciesListChanged?.Invoke();
+            }
+            Debug.Log("=== End LoadFromResources Debug ===");
         }
         
         #endregion
@@ -473,6 +501,7 @@ namespace SpeciesManagement
         /// </summary>
         private void CreateDefaultSampleSpecies()
         {
+            Debug.Log("=== CreateDefaultSampleSpecies Debug ===");
             registeredSpecies.Clear();
             
             // サンプルデータ作成
@@ -487,11 +516,20 @@ namespace SpeciesManagement
             
             foreach (var species in sampleSpecies)
             {
-                registeredSpecies.Add(species);
+                if (species != null)
+                {
+                    registeredSpecies.Add(species);
+                    Debug.Log($"Created sample species: {species.MonsterTypeName}");
+                }
+                else
+                {
+                    Debug.LogError("Failed to create sample species");
+                }
             }
             
             OnSpeciesListChanged?.Invoke();
-            Debug.Log($"Created {sampleSpecies.Length} sample species");
+            Debug.Log($"Created {sampleSpecies.Length} sample species, total registered: {registeredSpecies.Count}");
+            Debug.Log("=== End CreateDefaultSampleSpecies Debug ===");
         }
         
         /// <summary>
@@ -500,23 +538,33 @@ namespace SpeciesManagement
         private MonsterType CreateSampleMonsterType(string name, int hp, int atk, int def, int spd, 
             WeaknessTag weakness, StrongnessTag strength)
         {
-            var monsterType = ScriptableObject.CreateInstance<MonsterType>();
-            
-            // リフレクションでプライベートフィールドに値を設定
-            var monsterTypeType = typeof(MonsterType);
-            var nameField = monsterTypeType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var statusField = monsterTypeType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var weaknessField = monsterTypeType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            var strengthField = monsterTypeType.GetField("strongnessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            
-            var basicStatus = new BasicStatus(hp, atk, def, spd);
-            
-            nameField?.SetValue(monsterType, name);
-            statusField?.SetValue(monsterType, basicStatus);
-            weaknessField?.SetValue(monsterType, weakness);
-            strengthField?.SetValue(monsterType, strength);
-            
-            return monsterType;
+            try
+            {
+                Debug.Log($"Creating sample MonsterType: {name}");
+                var monsterType = ScriptableObject.CreateInstance<MonsterType>();
+                
+                // リフレクションでプライベートフィールドに値を設定
+                var monsterTypeType = typeof(MonsterType);
+                var nameField = monsterTypeType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var statusField = monsterTypeType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var weaknessField = monsterTypeType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var strengthField = monsterTypeType.GetField("strongnessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                
+                var basicStatus = new BasicStatus(hp, atk, def, spd);
+                
+                nameField?.SetValue(monsterType, name);
+                statusField?.SetValue(monsterType, basicStatus);
+                weaknessField?.SetValue(monsterType, weakness);
+                strengthField?.SetValue(monsterType, strength);
+                
+                Debug.Log($"Successfully created MonsterType: {name} with HP:{hp} ATK:{atk} DEF:{def} SPD:{spd}");
+                return monsterType;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Failed to create sample MonsterType '{name}': {ex.Message}");
+                return null;
+            }
         }
         
         #endregion

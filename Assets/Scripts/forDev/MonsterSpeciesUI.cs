@@ -40,17 +40,29 @@ namespace ForDev
         /// </summary>
         private System.Collections.IEnumerator InitializeAfterManagerReady()
         {
+            Debug.Log("=== InitializeAfterManagerReady Debug ===");
+            
             // MonsterManagerが初期化されるまで待機
             while (MonsterManager.Instance == null)
             {
                 yield return null;
             }
+            Debug.Log("MonsterManager is ready");
+
+            // MonsterSpeciesManagerが初期化されるまで待機
+            while (SpeciesManagement.MonsterSpeciesManager.Instance == null)
+            {
+                yield return null;
+            }
+            Debug.Log("MonsterSpeciesManager is ready");
 
             // 追加で1フレーム待機
             yield return null;
 
+            Debug.Log("Starting RefreshSpeciesList");
             // 初期表示
             RefreshSpeciesList();
+            Debug.Log("=== End InitializeAfterManagerReady Debug ===");
         }
 
         /// <summary>

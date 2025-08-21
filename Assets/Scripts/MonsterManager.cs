@@ -38,6 +38,16 @@ public class MonsterManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            // MonsterSpeciesManagerが存在しない場合は作成
+            if (SpeciesManagement.MonsterSpeciesManager.Instance == null)
+            {
+                Debug.Log("Creating MonsterSpeciesManager instance");
+                var speciesManagerGO = new GameObject("MonsterSpeciesManager");
+                speciesManagerGO.AddComponent<SpeciesManagement.MonsterSpeciesManager>();
+                DontDestroyOnLoad(speciesManagerGO);
+            }
+            
             LoadMonsterTypesFromResources();
         }
         else
