@@ -286,27 +286,31 @@ namespace SpeciesManagement
             {
                 var monsterType = ScriptableObject.CreateInstance<MonsterType>();
                 
-                // 基本情報設定
-                monsterType.MonsterTypeName = data.name;
+                // リフレクションでプライベートフィールドに値を設定
+                var monsterTypeType = typeof(MonsterType);
+                var nameField = monsterTypeType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var statusField = monsterTypeType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var weaknessField = monsterTypeType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var strengthField = monsterTypeType.GetField("strongnessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
                 // BasicStatus作成
-                var basicStatus = ScriptableObject.CreateInstance<BasicStatus>();
-                basicStatus.MaxHP = data.basicStatus.maxHP;
-                basicStatus.ATK = data.basicStatus.atk;
-                basicStatus.DEF = data.basicStatus.def;
-                basicStatus.SPD = data.basicStatus.spd;
-                monsterType.BasicStatus = basicStatus;
+                var basicStatus = new BasicStatus(
+                    data.basicStatus.maxHP,
+                    data.basicStatus.atk,
+                    data.basicStatus.def,
+                    data.basicStatus.spd
+                );
+                
+                // フィールドに値を設定
+                nameField?.SetValue(monsterType, data.name);
+                statusField?.SetValue(monsterType, basicStatus);
                 
                 // Enum変換
                 if (System.Enum.TryParse<WeaknessTag>(data.weakness, out var weakness))
-                    monsterType.WeaknessTag = weakness;
+                    weaknessField?.SetValue(monsterType, weakness);
                 
                 if (System.Enum.TryParse<StrongnessTag>(data.strength, out var strength))
-                    monsterType.StrongnessTag = strength;
-                
-                // その他の設定（デフォルト値）
-                monsterType.CaptureRate = 0.5f;
-                monsterType.GrowthRate = 1.0f;
+                    strengthField?.SetValue(monsterType, strength);
                 
                 return monsterType;
             }
@@ -474,11 +478,11 @@ namespace SpeciesManagement
             // サンプルデータ作成
             var sampleSpecies = new[]
             {
-                CreateSampleMonsterType("Flame Dragon", 150, 120, 80, 70, WeaknessTag.Ice, StrongnessTag.Fire),
+                CreateSampleMonsterType("Flame Dragon", 150, 120, 80, 70, WeaknessTag.Water, StrongnessTag.Fire),
                 CreateSampleMonsterType("Forest Wolf", 80, 75, 55, 90, WeaknessTag.Fire, StrongnessTag.Earth),
                 CreateSampleMonsterType("Crystal Golem", 200, 60, 120, 30, WeaknessTag.Dark, StrongnessTag.Light),
-                CreateSampleMonsterType("Thunder Bird", 100, 90, 50, 110, WeaknessTag.Earth, StrongnessTag.Electric),
-                CreateSampleMonsterType("Ice Bear", 140, 85, 90, 40, WeaknessTag.Fire, StrongnessTag.Ice)
+                CreateSampleMonsterType("Thunder Bird", 100, 90, 50, 110, WeaknessTag.Earth, StrongnessTag.Air),
+                CreateSampleMonsterType("Ice Bear", 140, 85, 90, 40, WeaknessTag.Fire, StrongnessTag.Water)
             };
             
             foreach (var species in sampleSpecies)
@@ -497,19 +501,20 @@ namespace SpeciesManagement
             WeaknessTag weakness, StrongnessTag strength)
         {
             var monsterType = ScriptableObject.CreateInstance<MonsterType>();
-            monsterType.MonsterTypeName = name;
             
-            var basicStatus = ScriptableObject.CreateInstance<BasicStatus>();
-            basicStatus.MaxHP = hp;
-            basicStatus.ATK = atk;
-            basicStatus.DEF = def;
-            basicStatus.SPD = spd;
+            // リフレクションでプライベートフィールドに値を設定
+            var monsterTypeType = typeof(MonsterType);
+            var nameField = monsterTypeType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var statusField = monsterTypeType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var weaknessField = monsterTypeType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var strengthField = monsterTypeType.GetField("strongnessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             
-            monsterType.BasicStatus = basicStatus;
-            monsterType.WeaknessTag = weakness;
-            monsterType.StrongnessTag = strength;
-            monsterType.CaptureRate = 0.5f;
-            monsterType.GrowthRate = 1.0f;
+            var basicStatus = new BasicStatus(hp, atk, def, spd);
+            
+            nameField?.SetValue(monsterType, name);
+            statusField?.SetValue(monsterType, basicStatus);
+            weaknessField?.SetValue(monsterType, weakness);
+            strengthField?.SetValue(monsterType, strength);
             
             return monsterType;
         }

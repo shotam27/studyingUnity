@@ -9,7 +9,7 @@
       "def": 80,
       "spd": 70
     },
-    "weakness": "Ice",
+    "weakness": "Water",
     "strength": "Fire",
     "rarity": "Epic",
     "category": "Dragon",
@@ -58,7 +58,7 @@
       "spd": 110
     },
     "weakness": "Earth",
-    "strength": "Electric",
+    "strength": "Air",
     "rarity": "Uncommon",
     "category": "Beast",
     "createdAt": "2025-08-21T10:00:00.000Z"
@@ -74,7 +74,7 @@
       "spd": 40
     },
     "weakness": "Fire",
-    "strength": "Ice",
+    "strength": "Water",
     "rarity": "Uncommon",
     "category": "Beast",
     "createdAt": "2025-08-21T10:00:00.000Z"

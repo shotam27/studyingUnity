@@ -206,16 +206,13 @@ public class MyMonsterUI : MonoBehaviour
     {
         Debug.Log("=== CreateRandomMonster Debug ===");
         
-        // MonsterTypeが無い場合は動的生成
+        // MonsterTypeが無い場合はサンプル種族を作成
         if (MonsterManager.Instance.AllMonsterTypes.Count == 0)
         {
-            Debug.Log("No MonsterTypes available, trying to create temporary ones...");
-            var sampleCreator = FindObjectOfType<SampleDataCreator>();
-            if (sampleCreator != null)
+            Debug.Log("No MonsterTypes available, trying to create sample species...");
+            if (SpeciesManagement.MonsterSpeciesManager.Instance != null)
             {
-                // リフレクションで private メソッドを呼び出し
-                var method = typeof(SampleDataCreator).GetMethod("CreateTemporaryMonsterTypes", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                method?.Invoke(sampleCreator, null);
+                SpeciesManagement.MonsterSpeciesManager.Instance.CreateSampleSpecies();
             }
         }
         
