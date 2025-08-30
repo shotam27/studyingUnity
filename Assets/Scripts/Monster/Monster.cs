@@ -6,7 +6,7 @@ public class Monster
 {
     [Header("個体情報")]
     [SerializeField] private string nickName;
-    [SerializeField] private MonsterType monsterType;
+    [SerializeField] private Species monsterType;
     [SerializeField] private int level;
 
     [Header("習得スキル")]
@@ -18,7 +18,7 @@ public class Monster
 
     // プロパティ
     public string NickName => nickName;
-    public MonsterType MonsterType => monsterType;
+    public Species MonsterType => monsterType;
     public int Level => level;
     public List<Skill> LearnedSkills => new List<Skill>(learnedSkills); // コピーを返す
     public int CurrentHP => currentHP;
@@ -31,14 +31,14 @@ public class Monster
     public int SPD => CalculateSPD();
 
     // コンストラクタ
-    public Monster(MonsterType type, string nickName = "", int level = 1)
+    public Monster(Species type, string nickName = "", int level = 1)
     {
         this.monsterType = type;
-        this.nickName = string.IsNullOrEmpty(nickName) ? type.MonsterTypeName : nickName;
+        this.nickName = string.IsNullOrEmpty(nickName) ? type.SpeciesName : nickName;
         this.level = Mathf.Max(1, level);
         
         // 基本スキルを習得
-        if (type != null && type.BasicSkills != null)
+    if (type != null && type.BasicSkills != null)
         {
             learnedSkills.AddRange(type.BasicSkills);
         }

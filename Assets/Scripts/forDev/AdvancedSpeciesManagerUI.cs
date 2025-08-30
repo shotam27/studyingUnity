@@ -47,9 +47,9 @@ namespace ForDev
         [SerializeField] private Button confirmYesButton;
         [SerializeField] private Button confirmNoButton;
         
-        private List<GameObject> speciesListItems = new List<GameObject>();
-        private MonsterType selectedSpecies;
-        private MonsterType editingSpecies;
+    private List<GameObject> speciesListItems = new List<GameObject>();
+    private Species selectedSpecies;
+    private Species editingSpecies;
         private System.Action pendingAction;
         private string currentSearchQuery = "";
         private FilterType currentFilter = FilterType.All;
@@ -192,9 +192,9 @@ namespace ForDev
             UpdateActionButtons();
         }
         
-        private List<MonsterType> GetFilteredSpecies()
+        private List<Species> GetFilteredSpecies()
         {
-            if (MonsterSpeciesManager.Instance == null) return new List<MonsterType>();
+            if (MonsterSpeciesManager.Instance == null) return new List<Species>();
             
             var allSpecies = MonsterSpeciesManager.Instance.AllSpecies;
             
@@ -202,7 +202,7 @@ namespace ForDev
             if (!string.IsNullOrEmpty(currentSearchQuery))
             {
                 allSpecies = allSpecies.Where(s => 
-                    s.MonsterTypeName.ToLower().Contains(currentSearchQuery.ToLower())
+                    s.SpeciesName.ToLower().Contains(currentSearchQuery.ToLower())
                 ).ToList();
             }
             
@@ -223,11 +223,11 @@ namespace ForDev
             return allSpecies;
         }
         
-        private void CreateSpeciesListItem(MonsterType species, int index)
+        private void CreateSpeciesListItem(Species species, int index)
         {
             if (speciesListItemPrefab == null || speciesListParent == null) return;
             
-            string displayText = $"[{index}] {species.MonsterTypeName}";
+            string displayText = $"[{index}] {species.SpeciesName}";
             if (species.BasicStatus != null)
             {
                 displayText += $" (HP:{species.BasicStatus.MaxHP})";
@@ -262,13 +262,13 @@ namespace ForDev
             speciesListItems.Clear();
         }
         
-        private void SelectSpecies(MonsterType species)
+        private void SelectSpecies(Species species)
         {
             selectedSpecies = species;
             UpdateActionButtons();
             RefreshSpeciesList(); // 選択状態の表示更新
             
-            Debug.Log($"Selected species: {species?.MonsterTypeName}");
+            Debug.Log($"Selected species: {species?.SpeciesName}");
         }
         
         #endregion
@@ -302,9 +302,9 @@ namespace ForDev
             if (strengthDropdown != null) strengthDropdown.value = 0;
         }
         
-        private void PopulateEditFields(MonsterType species)
+        private void PopulateEditFields(Species species)
         {
-            if (nameInput != null) nameInput.text = species.MonsterTypeName ?? "";
+            if (nameInput != null) nameInput.text = species.SpeciesName ?? "";
             
             if (species.BasicStatus != null)
             {
@@ -343,15 +343,15 @@ namespace ForDev
         
         private void CreateNewSpecies()
         {
-            // 実際の実装では ScriptableObject.CreateInstance<MonsterType>() を使用
+                // 実際の実装では ScriptableObject.CreateInstance<Species>() を使う
             Debug.Log($"Would create new species: {nameInput.text}");
-            // TODO: 実際のMonsterType作成ロジック
+                // TODO: 実際のSpecies作成ロジック
         }
         
         private void UpdateExistingSpecies()
         {
             // 既存の種族データ更新
-            Debug.Log($"Would update species: {editingSpecies.MonsterTypeName}");
+            Debug.Log($"Would update species: {editingSpecies.SpeciesName}");
             // TODO: 実際のデータ更新ロジック
         }
         
@@ -368,7 +368,7 @@ namespace ForDev
         {
             if (selectedSpecies == null) return;
             
-            string message = $"Delete species '{selectedSpecies.MonsterTypeName}'?\\nThis action cannot be undone.";
+            string message = $"Delete species '{selectedSpecies.SpeciesName}'?\\nThis action cannot be undone.";
             ShowConfirmPanel(message, () => DeleteSelectedSpecies());
         }
         

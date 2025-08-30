@@ -101,7 +101,7 @@ namespace SpeciesManagement
             /// </summary>
             public class SearchResponse
             {
-                public List<MonsterTypeData> species; // 種族データ一覧
+                public List<SpeciesData> species; // 種族データ一覧
                 public int totalCount;                 // 総件数
                 public int currentPage;                // 現在のページ
                 public int totalPages;                 // 総ページ数
@@ -114,7 +114,7 @@ namespace SpeciesManagement
             /// </summary>
             public class DetailResponse
             {
-                public MonsterTypeData species;
+                public SpeciesData species;
                 public List<RelatedSpeciesData> relatedSpecies; // 類似種族
                 public UsageStatistics usage;                   // 使用統計
             }
@@ -147,7 +147,7 @@ namespace SpeciesManagement
             public class UpdateResponse
             {
                 public bool success;
-                public MonsterTypeData updatedSpecies; // 更新後のデータ
+                public SpeciesData updatedSpecies; // 更新後のデータ
                 public string message;
                 public List<string> errors;
                 public ChangeLog changeLog;            // 変更履歴
@@ -203,7 +203,7 @@ namespace SpeciesManagement
 
         // 共通データ構造
         [System.Serializable]
-        public class MonsterTypeData
+        public class SpeciesData
         {
             public string id;
             public string name;

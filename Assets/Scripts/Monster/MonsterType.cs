@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-[CreateAssetMenu(fileName = "New MonsterType", menuName = "Game/MonsterType")]
-public class MonsterType : ScriptableObject
+[CreateAssetMenu(fileName = "New Species", menuName = "Game/Species")]
+public class Species : ScriptableObject
 {
     [Header("基本情報")]
     [SerializeField] private string monsterTypeName;
@@ -17,7 +17,8 @@ public class MonsterType : ScriptableObject
     [SerializeField] private List<Skill> basicSkills = new List<Skill>();
 
     // プロパティ
-    public string MonsterTypeName => monsterTypeName;
+    // Alias: expose species-oriented names while preserving underlying field name
+    public string SpeciesName => monsterTypeName;
     public BasicStatus BasicStatus => new BasicStatus(basicStatus); // コピーを返す
     public Sprite Sprite => sprite;
     public WeaknessTag WeaknessTag => weaknessTag;

@@ -6,13 +6,13 @@ using UnityEngine;
 namespace SpeciesManagement
 {
     /// <summary>
-    /// MonsterType種族の管理を専門に行うクラス
+    /// Species種族の管理を専門に行うクラス
     /// MonsterManagerとは分離して、種族データの管理に特化
     /// </summary>
     public class MonsterSpeciesManager : MonoBehaviour
     {
         [Header("Species Database")]
-        [SerializeField] private List<MonsterType> registeredSpecies = new List<MonsterType>();
+    [SerializeField] private List<Species> registeredSpecies = new List<Species>();
         [SerializeField] private string saveFileName = "monster_species_data.json";
         [SerializeField] private string webJsonFileName = "monster-species.json"; // Webページ用
         
@@ -24,14 +24,14 @@ namespace SpeciesManagement
         // シングルトン
         public static MonsterSpeciesManager Instance { get; private set; }
         
-        // イベント
-        public System.Action<MonsterType> OnSpeciesAdded;
-        public System.Action<MonsterType> OnSpeciesRemoved;
-        public System.Action<MonsterType> OnSpeciesUpdated;
+    // イベント
+    public System.Action<Species> OnSpeciesAdded;
+    public System.Action<Species> OnSpeciesRemoved;
+    public System.Action<Species> OnSpeciesUpdated;
         public System.Action OnSpeciesListChanged;
         
-        // プロパティ
-        public List<MonsterType> AllSpecies => new List<MonsterType>(registeredSpecies);
+    // プロパティ
+    public List<Species> AllSpecies => new List<Species>(registeredSpecies);
         public int SpeciesCount => registeredSpecies.Count;
         
         private void Awake()
@@ -67,7 +67,7 @@ namespace SpeciesManagement
         /// <summary>
         /// 新しい種族を登録
         /// </summary>
-        public bool AddSpecies(MonsterType species)
+    public bool AddSpecies(Species species)
         {
             if (species == null)
             {
@@ -78,7 +78,7 @@ namespace SpeciesManagement
             // 重複チェック
             if (IsSpeciesRegistered(species))
             {
-                Debug.LogWarning($"Species {species.MonsterTypeName} is already registered");
+                Debug.LogWarning($"Species {species.SpeciesName} is already registered");
                 return false;
             }
             
@@ -88,26 +88,26 @@ namespace SpeciesManagement
             
             if (autoSave) SaveSpeciesData();
             
-            Debug.Log($"Added species: {species.MonsterTypeName}");
+            Debug.Log($"Added species: {species.SpeciesName}");
             return true;
         }
         
         /// <summary>
         /// 種族を削除
         /// </summary>
-        public bool RemoveSpecies(MonsterType species)
+    public bool RemoveSpecies(Species species)
         {
             if (species == null) return false;
             
             bool removed = registeredSpecies.Remove(species);
             if (removed)
             {
-                OnSpeciesRemoved?.Invoke(species);
+        OnSpeciesRemoved?.Invoke(species);
                 OnSpeciesListChanged?.Invoke();
                 
                 if (autoSave) SaveSpeciesData();
                 
-                Debug.Log($"Removed species: {species.MonsterTypeName}");
+        Debug.Log($"Removed species: {species.SpeciesName}");
             }
             
             return removed;
@@ -116,15 +116,15 @@ namespace SpeciesManagement
         /// <summary>
         /// 種族情報を更新
         /// </summary>
-        public void UpdateSpecies(MonsterType species)
+        public void UpdateSpecies(Species species)
         {
             if (species == null || !registeredSpecies.Contains(species)) return;
-            
+
             OnSpeciesUpdated?.Invoke(species);
-            
+
             if (autoSave) SaveSpeciesData();
-            
-            Debug.Log($"Updated species: {species.MonsterTypeName}");
+
+            Debug.Log($"Updated species: {species.SpeciesName}");
         }
         
         #endregion
@@ -134,24 +134,24 @@ namespace SpeciesManagement
         /// <summary>
         /// 種族が登録済みかチェック
         /// </summary>
-        public bool IsSpeciesRegistered(MonsterType species)
+        public bool IsSpeciesRegistered(Species species)
         {
             return registeredSpecies.Contains(species) || 
-                   registeredSpecies.Any(s => s.MonsterTypeName == species.MonsterTypeName);
+                   registeredSpecies.Any(s => s.SpeciesName == species.SpeciesName);
         }
         
         /// <summary>
         /// 名前で種族を検索
         /// </summary>
-        public MonsterType GetSpeciesByName(string name)
+        public Species GetSpeciesByName(string name)
         {
-            return registeredSpecies.FirstOrDefault(s => s.MonsterTypeName == name);
+            return registeredSpecies.FirstOrDefault(s => s.SpeciesName == name);
         }
         
         /// <summary>
         /// IDで種族を検索
         /// </summary>
-        public MonsterType GetSpeciesById(int id)
+        public Species GetSpeciesById(int id)
         {
             return (id >= 0 && id < registeredSpecies.Count) ? registeredSpecies[id] : null;
         }
@@ -159,7 +159,7 @@ namespace SpeciesManagement
         /// <summary>
         /// 弱点タグで種族をフィルタリング
         /// </summary>
-        public List<MonsterType> GetSpeciesByWeakness(WeaknessTag weakness)
+        public List<Species> GetSpeciesByWeakness(WeaknessTag weakness)
         {
             return registeredSpecies.Where(s => s.WeaknessTag == weakness).ToList();
         }
@@ -167,7 +167,7 @@ namespace SpeciesManagement
         /// <summary>
         /// 強さタグで種族をフィルタリング
         /// </summary>
-        public List<MonsterType> GetSpeciesByStrength(StrongnessTag strength)
+        public List<Species> GetSpeciesByStrength(StrongnessTag strength)
         {
             return registeredSpecies.Where(s => s.StrongnessTag == strength).ToList();
         }
@@ -175,7 +175,7 @@ namespace SpeciesManagement
         /// <summary>
         /// ステータス範囲で種族をフィルタリング
         /// </summary>
-        public List<MonsterType> GetSpeciesByStatRange(int minHP, int maxHP)
+        public List<Species> GetSpeciesByStatRange(int minHP, int maxHP)
         {
             return registeredSpecies.Where(s => 
                 s.BasicStatus != null && 
@@ -266,7 +266,7 @@ namespace SpeciesManagement
         /// <summary>
         /// JSON文字列から種族データを読み込み
         /// </summary>
-        public void LoadFromJsonString(string json)
+    public void LoadFromJsonString(string json)
         {
             try
             {
@@ -276,10 +276,10 @@ namespace SpeciesManagement
                 
                 foreach (var speciesData in speciesArray)
                 {
-                    var monsterType = CreateMonsterTypeFromJson(speciesData);
-                    if (monsterType != null)
+                    var speciesObj = CreateSpeciesFromJson(speciesData);
+                    if (speciesObj != null)
                     {
-                        registeredSpecies.Add(monsterType);
+                        registeredSpecies.Add(speciesObj);
                     }
                 }
                 
@@ -293,20 +293,20 @@ namespace SpeciesManagement
         }
         
         /// <summary>
-        /// JSON用のSpeciesDataからMonsterTypeを作成
+        /// JSON用のSpeciesDataからSpeciesを作成
         /// </summary>
-        private MonsterType CreateMonsterTypeFromJson(SpeciesJsonData data)
+        private Species CreateSpeciesFromJson(SpeciesJsonData data)
         {
             try
             {
-                var monsterType = ScriptableObject.CreateInstance<MonsterType>();
+                var speciesObj = ScriptableObject.CreateInstance<Species>();
                 
                 // リフレクションでプライベートフィールドに値を設定
-                var monsterTypeType = typeof(MonsterType);
-                var nameField = monsterTypeType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var statusField = monsterTypeType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var weaknessField = monsterTypeType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var strengthField = monsterTypeType.GetField("strongnessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var speciesType = typeof(Species);
+                var nameField = speciesType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var statusField = speciesType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var weaknessField = speciesType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var strengthField = speciesType.GetField("strongnessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 
                 // BasicStatus作成
                 var basicStatus = new BasicStatus(
@@ -317,21 +317,21 @@ namespace SpeciesManagement
                 );
                 
                 // フィールドに値を設定
-                nameField?.SetValue(monsterType, data.name);
-                statusField?.SetValue(monsterType, basicStatus);
+                nameField?.SetValue(speciesObj, data.name);
+                statusField?.SetValue(speciesObj, basicStatus);
                 
                 // Enum変換
                 if (System.Enum.TryParse<WeaknessTag>(data.weakness, out var weakness))
-                    weaknessField?.SetValue(monsterType, weakness);
+                    weaknessField?.SetValue(speciesObj, weakness);
                 
                 if (System.Enum.TryParse<StrongnessTag>(data.strength, out var strength))
-                    strengthField?.SetValue(monsterType, strength);
+                    strengthField?.SetValue(speciesObj, strength);
                 
-                return monsterType;
+                return speciesObj;
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Failed to create MonsterType from JSON data: {ex.Message}");
+                Debug.LogError($"Failed to create Species from JSON data: {ex.Message}");
                 return null;
             }
         }
@@ -345,9 +345,9 @@ namespace SpeciesManagement
             {
                 var speciesArray = registeredSpecies.Select(species => new SpeciesJsonData
                 {
-                    id = species.name ?? species.MonsterTypeName?.Replace(" ", "_").ToLower(),
-                    name = species.MonsterTypeName,
-                    description = $"A {species.MonsterTypeName} species",
+                    id = species.name ?? species.SpeciesName?.Replace(" ", "_").ToLower(),
+                    name = species.SpeciesName,
+                    description = $"A {species.SpeciesName} species",
                     basicStatus = new BasicStatusJson
                     {
                         maxHP = species.BasicStatus?.MaxHP ?? 100,
@@ -383,16 +383,16 @@ namespace SpeciesManagement
         private void LoadFromResources()
         {
             Debug.Log("=== LoadFromResources Debug ===");
-            MonsterType[] loadedTypes = Resources.LoadAll<MonsterType>("MonsterTypes");
-            Debug.Log($"Found {loadedTypes.Length} MonsterTypes in Resources");
+                Species[] loadedTypes = Resources.LoadAll<Species>("MonsterTypes");
+                Debug.Log($"Found {loadedTypes.Length} Species in Resources");
             
-            registeredSpecies.Clear();
-            registeredSpecies.AddRange(loadedTypes);
+                registeredSpecies.Clear();
+                registeredSpecies.AddRange(loadedTypes);
             
             // Resourcesに何もない場合はサンプルデータを作成
             if (registeredSpecies.Count == 0)
             {
-                Debug.Log("No MonsterTypes found in Resources, creating default sample species");
+                Debug.Log("No Species found in Resources, creating default sample species");
                 CreateDefaultSampleSpecies();
             }
             else
@@ -424,22 +424,22 @@ namespace SpeciesManagement
                     continue;
                 }
                 
-                if (string.IsNullOrEmpty(species.MonsterTypeName))
+                if (string.IsNullOrEmpty(species.SpeciesName))
                 {
                     issues.Add($"Species at index {i} has no name");
                 }
                 
                 if (species.BasicStatus == null)
                 {
-                    issues.Add($"Species {species.MonsterTypeName} has no BasicStatus");
+                    issues.Add($"Species {species.SpeciesName} has no BasicStatus");
                 }
                 
                 // 重複チェック
                 for (int j = i + 1; j < registeredSpecies.Count; j++)
                 {
-                    if (registeredSpecies[j]?.MonsterTypeName == species.MonsterTypeName)
+                    if (registeredSpecies[j]?.SpeciesName == species.SpeciesName)
                     {
-                        issues.Add($"Duplicate species name: {species.MonsterTypeName}");
+                        issues.Add($"Duplicate species name: {species.SpeciesName}");
                     }
                 }
             }
@@ -519,7 +519,7 @@ namespace SpeciesManagement
                 if (species != null)
                 {
                     registeredSpecies.Add(species);
-                    Debug.Log($"Created sample species: {species.MonsterTypeName}");
+                    Debug.Log($"Created sample species: {species.SpeciesName}");
                 }
                 else
                 {
@@ -533,18 +533,18 @@ namespace SpeciesManagement
         }
         
         /// <summary>
-        /// サンプル用MonsterTypeを作成
+        /// サンプル用Speciesを作成
         /// </summary>
-        private MonsterType CreateSampleMonsterType(string name, int hp, int atk, int def, int spd, 
+        private Species CreateSampleMonsterType(string name, int hp, int atk, int def, int spd, 
             WeaknessTag weakness, StrongnessTag strength)
         {
             try
             {
-                Debug.Log($"Creating sample MonsterType: {name}");
-                var monsterType = ScriptableObject.CreateInstance<MonsterType>();
+                Debug.Log($"Creating sample Species: {name}");
+                var monsterType = ScriptableObject.CreateInstance<Species>();
                 
                 // リフレクションでプライベートフィールドに値を設定
-                var monsterTypeType = typeof(MonsterType);
+                var monsterTypeType = typeof(Species);
                 var nameField = monsterTypeType.GetField("monsterTypeName", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 var statusField = monsterTypeType.GetField("basicStatus", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
                 var weaknessField = monsterTypeType.GetField("weaknessTag", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
@@ -557,12 +557,12 @@ namespace SpeciesManagement
                 weaknessField?.SetValue(monsterType, weakness);
                 strengthField?.SetValue(monsterType, strength);
                 
-                Debug.Log($"Successfully created MonsterType: {name} with HP:{hp} ATK:{atk} DEF:{def} SPD:{spd}");
+                Debug.Log($"Successfully created Species: {name} with HP:{hp} ATK:{atk} DEF:{def} SPD:{spd}");
                 return monsterType;
             }
             catch (System.Exception ex)
             {
-                Debug.LogError($"Failed to create sample MonsterType '{name}': {ex.Message}");
+                Debug.LogError($"Failed to create sample Species '{name}': {ex.Message}");
                 return null;
             }
         }

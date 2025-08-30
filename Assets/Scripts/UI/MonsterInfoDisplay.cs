@@ -74,7 +74,7 @@ namespace UI
         /// <summary>
         /// MonsterTypeの情報を表示（レベル情報なし）
         /// </summary>
-        public void DisplayMonsterType(MonsterType monsterType, int displayLevel = 1)
+    public void DisplayMonsterType(Species monsterType, int displayLevel = 1)
         {
             if (monsterType == null)
             {
@@ -83,7 +83,7 @@ namespace UI
             }
 
             // 基本情報
-            SetText(nameText, monsterType.MonsterTypeName);
+            SetText(nameText, monsterType.SpeciesName);
             SetText(levelText, $"Lv.{displayLevel} (Base)");
 
             // ベースステータス

@@ -323,7 +323,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0.047906924, y: -0.000051049286}
+  m_AnchoredPosition: {x: 0.000068462876, y: -0.000051049286}
   m_SizeDelta: {x: -1, y: 1}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &506120168
@@ -634,8 +634,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 809674688}
+  - component: {fileID: 809674689}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: MonsterSpeciesManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -656,6 +657,24 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &809674689
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 809674687}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c095a4d6d6b7ec14fab4ddb2c3216fbf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  registeredSpecies: []
+  saveFileName: monster_species_data.json
+  webJsonFileName: monster-species.json
+  autoSave: 1
+  loadOnStart: 1
+  useStreamingAssets: 1
 --- !u!1 &960458222
 GameObject:
   m_ObjectHideFlags: 0
@@ -739,7 +758,7 @@ MonoBehaviour:
   m_HandleRect: {fileID: 1015775514}
   m_Direction: 0
   m_Value: 0
-  m_Size: 0.99891406
+  m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -1034,6 +1053,57 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1217425494}
   m_CullTransparentMesh: 1
+--- !u!1 &1225661868
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1225661870}
+  - component: {fileID: 1225661869}
+  m_Layer: 0
+  m_Name: initGame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1225661869
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1225661868}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f47014d10c931d48a4b5e13d9923136, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  autoInitialize: 1
+  initDelay: 1
+  speciesName: Flame Dragon
+  monsterNames:
+  - Blaze
+  - Ember
+  monsterLevels: 0500000003000000
+--- !u!4 &1225661870
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1225661868}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1359209502
 GameObject:
   m_ObjectHideFlags: 0
@@ -1622,52 +1692,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: -20, y: -20}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &2084422043
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2084422045}
-  - component: {fileID: 2084422044}
-  m_Layer: 0
-  m_Name: SampleDataCreator
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &2084422044
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2084422043}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1cdeef3e5dbc7784c889b006ff28bf86, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  createSampleMonstersOnStart: 1
-  sampleMonsterCount: 5
---- !u!4 &2084422045
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2084422043}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2127105651
 GameObject:
   m_ObjectHideFlags: 0
@@ -2012,6 +2036,6 @@ SceneRoots:
   - {fileID: 519420032}
   - {fileID: 809674688}
   - {fileID: 704566269}
-  - {fileID: 2084422045}
   - {fileID: 1133520777}
   - {fileID: 1818341227}
+  - {fileID: 1225661870}

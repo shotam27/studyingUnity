@@ -6,7 +6,7 @@ using SpeciesManagement;
 public class MonsterManager : MonoBehaviour
 {
     [Header("MonsterType管理")]
-    [SerializeField] private List<MonsterType> allMonsterTypes = new List<MonsterType>();
+    [SerializeField] private List<Species> allMonsterTypes = new List<Species>();
     
     [Header("Monster個体管理")]
     [SerializeField] private List<Monster> playerMonsters = new List<Monster>();
@@ -16,7 +16,7 @@ public class MonsterManager : MonoBehaviour
     public static MonsterManager Instance { get; private set; }
 
     // プロパティ - MonsterSpeciesManagerと連携
-    public List<MonsterType> AllMonsterTypes 
+    public List<Species> AllMonsterTypes 
     { 
         get 
         {
@@ -25,7 +25,7 @@ public class MonsterManager : MonoBehaviour
             {
                 return MonsterSpeciesManager.Instance.AllSpecies;
             }
-            return new List<MonsterType>(allMonsterTypes);
+            return new List<Species>(allMonsterTypes);
         }
     }
     public List<Monster> PlayerMonsters => new List<Monster>(playerMonsters);
@@ -56,37 +56,37 @@ public class MonsterManager : MonoBehaviour
         }
     }
 
-    #region MonsterType管理
+    #region Species管理
 
-    // ResourcesフォルダからすべてのMonsterTypeを読み込み
+    // ResourcesフォルダからすべてのSpeciesを読み込み
     private void LoadMonsterTypesFromResources()
     {
-        Debug.Log("=== MonsterType Loading Debug ===");
+        Debug.Log("=== Species Loading Debug ===");
         Debug.Log($"Resources folder path: Assets/Resources/MonsterTypes");
         
-        MonsterType[] loadedTypes = Resources.LoadAll<MonsterType>("MonsterTypes");
-        Debug.Log($"Found {loadedTypes.Length} MonsterType assets in Resources");
+        Species[] loadedTypes = Resources.LoadAll<Species>("MonsterTypes");
+        Debug.Log($"Found {loadedTypes.Length} Species assets in Resources");
         
         allMonsterTypes.Clear();
         allMonsterTypes.AddRange(loadedTypes);
         
         foreach (var type in loadedTypes)
         {
-            Debug.Log($"Loaded MonsterType: {type.name} - {(type.MonsterTypeName ?? "NULL NAME")}");
+            Debug.Log($"Loaded Species: {type.name} - {(type.SpeciesName ?? "NULL NAME")} ");
         }
         
-        Debug.Log($"Loaded {allMonsterTypes.Count} MonsterTypes from Resources");
-        Debug.Log("=== End MonsterType Loading Debug ===");
+        Debug.Log($"Loaded {allMonsterTypes.Count} Species from Resources");
+    Debug.Log("=== End Species Loading Debug ===");
     }
 
     // MonsterTypeを名前で検索
-    public MonsterType GetMonsterTypeByName(string typeName)
+    public Species GetMonsterTypeByName(string typeName)
     {
-        return allMonsterTypes.FirstOrDefault(type => type.MonsterTypeName == typeName);
+        return allMonsterTypes.FirstOrDefault(type => type.SpeciesName == typeName);
     }
 
     // MonsterTypeをIDで検索（配列インデックス）
-    public MonsterType GetMonsterTypeByID(int id)
+    public Species GetMonsterTypeByID(int id)
     {
         if (id >= 0 && id < allMonsterTypes.Count)
             return allMonsterTypes[id];
@@ -94,7 +94,7 @@ public class MonsterManager : MonoBehaviour
     }
 
     // ランダムなMonsterTypeを取得
-    public MonsterType GetRandomMonsterType()
+    public Species GetRandomMonsterType()
     {
         if (allMonsterTypes.Count == 0) return null;
         int randomIndex = Random.Range(0, allMonsterTypes.Count);
@@ -106,16 +106,16 @@ public class MonsterManager : MonoBehaviour
     #region Monster個体管理
 
     // 新しいモンスターを作成してパーティに追加
-    public Monster CreateAndAddMonster(MonsterType monsterType, string nickName = "", int level = 1)
+    public Monster CreateAndAddMonster(Species monsterType, string nickName = "", int level = 1)
     {
         Debug.Log($"=== CreateAndAddMonster Debug ===");
-        Debug.Log($"MonsterType: {(monsterType?.name ?? "NULL")}");
+        Debug.Log($"Species: {(monsterType?.name ?? "NULL")} ");
         Debug.Log($"NickName: {nickName}");
         Debug.Log($"Level: {level}");
         
         if (monsterType == null) 
         {
-            Debug.LogError("MonsterType is NULL! Cannot create monster.");
+            Debug.LogError("Species is NULL! Cannot create monster.");
             return null;
         }
         
@@ -124,7 +124,7 @@ public class MonsterManager : MonoBehaviour
         
         bool added = AddMonster(newMonster);
         Debug.Log($"Monster added to party: {added}");
-        Debug.Log($"=== End CreateAndAddMonster Debug ===");
+    Debug.Log($"=== End CreateAndAddMonster Debug ===");
         
         return added ? newMonster : null;
     }
@@ -189,19 +189,19 @@ public class MonsterManager : MonoBehaviour
     public Monster GenerateRandomMonster(int minLevel = 1, int maxLevel = 10)
     {
         Debug.Log($"=== GenerateRandomMonster Debug ===");
-        Debug.Log($"Available MonsterTypes: {allMonsterTypes.Count}");
+        Debug.Log($"Available Species: {allMonsterTypes.Count}");
         
-        MonsterType randomType = GetRandomMonsterType();
+        Species randomType = GetRandomMonsterType();
         if (randomType == null) 
         {
-            Debug.LogError("No MonsterTypes available! Cannot generate random monster.");
+            Debug.LogError("No Species available! Cannot generate random monster.");
             return null;
         }
         
-        Debug.Log($"Selected MonsterType: {randomType.name}");
+        Debug.Log($"Selected Species: {randomType.name}");
         
         int randomLevel = Random.Range(minLevel, maxLevel + 1);
-        string randomName = GenerateRandomName(randomType.MonsterTypeName);
+        string randomName = GenerateRandomName(randomType.SpeciesName);
         
         Debug.Log($"Generated: {randomName} (Lv.{randomLevel})");
         Debug.Log($"=== End GenerateRandomMonster Debug ===");

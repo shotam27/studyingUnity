@@ -23,7 +23,7 @@ namespace ForDev
         [SerializeField] private Color debugBackgroundColor = new Color(0.2f, 0.2f, 0.8f, 0.15f);
 
         private List<GameObject> speciesListItems = new List<GameObject>();
-        private MonsterType selectedSpecies;
+    private Species selectedSpecies;
 
         private void Start()
         {
@@ -87,7 +87,7 @@ namespace ForDev
             }
 
             var allSpecies = MonsterManager.Instance.AllMonsterTypes;
-            Debug.Log($"Found {allSpecies.Count} MonsterType(s)");
+            Debug.Log($"Found {allSpecies.Count} Species(s)");
 
             // 情報テキスト更新
             SetInfoText($"Registered Species: {allSpecies.Count}");
@@ -98,7 +98,7 @@ namespace ForDev
                 var species = allSpecies[i];
                 if (species == null)
                 {
-                    Debug.LogWarning($"MonsterType at index {i} is null");
+                    Debug.LogWarning($"Species at index {i} is null");
                     continue;
                 }
 
@@ -145,7 +145,7 @@ namespace ForDev
         /// <summary>
         /// MonsterType用のリストアイテムを作成
         /// </summary>
-        private void CreateSpeciesListItem(MonsterType species, int index)
+    private void CreateSpeciesListItem(Species species, int index)
         {
             if (speciesListItemPrefab == null || speciesListParent == null)
             {
@@ -154,7 +154,7 @@ namespace ForDev
             }
 
             // 表示テキスト作成
-            string displayText = $"[{index}] {species.MonsterTypeName ?? "Unnamed"}";
+            string displayText = $"[{index}] {species.SpeciesName ?? "Unnamed"}";
             if (species.BasicStatus != null)
             {
                 displayText += $" (HP:{species.BasicStatus.MaxHP} ATK:{species.BasicStatus.ATK})";
@@ -185,10 +185,10 @@ namespace ForDev
         /// <summary>
         /// MonsterTypeを選択
         /// </summary>
-        private void SelectSpecies(MonsterType species)
+        private void SelectSpecies(Species species)
         {
             selectedSpecies = species;
-            Debug.Log($"Selected species: {species?.MonsterTypeName ?? "null"}");
+            Debug.Log($"Selected species: {species?.SpeciesName ?? "null"}");
 
             // 詳細表示更新
             if (detailDisplay != null)
@@ -204,11 +204,11 @@ namespace ForDev
         /// <summary>
         /// MonsterTypeの詳細をログ出力（デバッグ用）
         /// </summary>
-        private void LogSpeciesDetails(MonsterType species)
+        private void LogSpeciesDetails(Species species)
         {
             if (species == null) return;
 
-            Debug.Log($"=== Species Details: {species.MonsterTypeName} ===");
+            Debug.Log($"=== Species Details: {species.SpeciesName} ===");
             Debug.Log($"Basic Status: HP:{species.BasicStatus?.MaxHP} ATK:{species.BasicStatus?.ATK} DEF:{species.BasicStatus?.DEF} SPD:{species.BasicStatus?.SPD}");
             Debug.Log($"Weakness: {species.WeaknessTag}, Strongness: {species.StrongnessTag}");
             Debug.Log($"Basic Skills Count: {species.BasicSkills?.Count ?? 0}");
@@ -292,7 +292,7 @@ namespace ForDev
             var monster = MonsterManager.Instance.CreateAndAddMonster(selectedSpecies, randomName, randomLevel);
             if (monster != null)
             {
-                Debug.Log($"Created monster: {monster.NickName} (Lv.{monster.Level}) from species {selectedSpecies.MonsterTypeName}");
+                Debug.Log($"Created monster: {monster.NickName} (Lv.{monster.Level}) from species {selectedSpecies.SpeciesName}");
             }
             else
             {

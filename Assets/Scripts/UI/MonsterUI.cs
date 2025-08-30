@@ -163,7 +163,7 @@ public class MonsterUI : MonoBehaviour
         if (currentMonster == null) return;
 
         // 基本情報表示
-        nameText.text = $"{currentMonster.NickName} ({currentMonster.MonsterType.MonsterTypeName})";
+    nameText.text = $"{currentMonster.NickName} ({currentMonster.MonsterType.SpeciesName})";
         levelText.text = $"Lv.{currentMonster.Level}";
         
         // ステータス表示
