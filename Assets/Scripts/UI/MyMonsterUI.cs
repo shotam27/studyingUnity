@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UI;
 
 public class MyMonsterUI : MonoBehaviour
 {
