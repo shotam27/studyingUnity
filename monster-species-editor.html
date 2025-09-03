@@ -19,6 +19,10 @@
             <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
                 📁 JSONファイルを読み込み
             </button>
+            <button class="btn btn-primary" onclick="openWritableFile()">
+                📂 開いて上書き
+            </button>
+            <small style="margin-left:12px;color:#eef;opacity:0.9;">(対応ブラウザなら選択ファイルを直接上書き保存できます)</small>
             <button class="btn btn-success" onclick="saveToFile()">
                 💾 JSONファイルに保存
             </button>
@@ -42,20 +46,10 @@
                 ➕ 新しい種族を追加
             </button>
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="🔍 種族名で検索..." 
-                       oninput="filterSpecies()">
+                <input type="text" id="searchInput" placeholder="🔍 種族名で検索..." oninput="filterSpecies()">
             </div>
-            <select id="categoryFilter" onchange="filterSpecies()">
-                <option value="">全カテゴリ</option>
-                <option value="Beast">Beast</option>
-                <option value="Dragon">Dragon</option>
-                <option value="Elemental">Elemental</option>
-                <option value="Humanoid">Humanoid</option>
-                <option value="Undead">Undead</option>
-                <option value="Plant">Plant</option>
-                <option value="Machine">Machine</option>
-                <option value="Spirit">Spirit</option>
-            </select>
+            <!-- カテゴリを入力式に変更 -->
+            <input type="text" id="categoryFilter" class="form-input" placeholder="カテゴリでフィルター（例: Dragon）" oninput="filterSpecies()">
         </div>
 
         <!-- 種族一覧 -->
@@ -112,31 +106,11 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">弱点 *</label>
-                        <select id="speciesWeakness" class="form-select" required>
-                            <option value="">選択してください</option>
-                            <option value="Fire">Fire</option>
-                            <option value="Water">Water</option>
-                            <option value="Earth">Earth</option>
-                            <option value="Air">Air</option>
-                            <option value="Light">Light</option>
-                            <option value="Dark">Dark</option>
-                            <option value="Physical">Physical</option>
-                            <option value="Magical">Magical</option>
-                        </select>
+                        <input type="text" id="speciesWeakness" class="form-input" required placeholder="例: Water">
                     </div>
                     <div class="form-group">
                         <label class="form-label">強み *</label>
-                        <select id="speciesStrength" class="form-select" required>
-                            <option value="">選択してください</option>
-                            <option value="Fire">Fire</option>
-                            <option value="Water">Water</option>
-                            <option value="Earth">Earth</option>
-                            <option value="Air">Air</option>
-                            <option value="Light">Light</option>
-                            <option value="Dark">Dark</option>
-                            <option value="Physical">Physical</option>
-                            <option value="Magical">Magical</option>
-                        </select>
+                        <input type="text" id="speciesStrength" class="form-input" required placeholder="例: Fire">
                     </div>
                 </div>
 
@@ -154,17 +128,7 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">カテゴリ *</label>
-                        <select id="speciesCategory" class="form-select" required>
-                            <option value="">選択してください</option>
-                            <option value="Beast">Beast</option>
-                            <option value="Dragon">Dragon</option>
-                            <option value="Elemental">Elemental</option>
-                            <option value="Humanoid">Humanoid</option>
-                            <option value="Undead">Undead</option>
-                            <option value="Plant">Plant</option>
-                            <option value="Machine">Machine</option>
-                            <option value="Spirit">Spirit</option>
-                        </select>
+                        <input type="text" id="speciesCategory" class="form-input" required placeholder="例: Dragon">
                     </div>
                 </div>
 
@@ -195,10 +159,12 @@
     </div>
 
     <script>
-        // グローバル変数
-        let speciesData = [];
-        let currentEditingIndex = -1;
-        let filteredData = [];
+    // グローバル変数
+    let speciesData = [];
+    let currentEditingIndex = -1;
+    let filteredData = [];
+    let currentFileHandle = null; // File System Access API handle when available
+    let currentFileName = null; // fallback filename for downloads/status
 
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
@@ -208,7 +174,7 @@
         });
 
         // イベントリスナー設定
-        function setupEventListeners() {
+    function setupEventListeners() {
             // ファイル入力
             document.getElementById('fileInput').addEventListener('change', handleFileSelect);
             
@@ -304,6 +270,7 @@
                     if (Array.isArray(data)) {
                         speciesData = data;
                         updateDisplay();
+                        currentFileName = file.name;
                         updateFileStatus(`${file.name} 読み込み完了`);
                         updateStatus('ファイル読み込み成功');
                     } else {
@@ -316,19 +283,77 @@
             reader.readAsText(file);
         }
 
+        // Open a file with write permission using the File System Access API (best-effort)
+        async function openWritableFile() {
+            if (!window.showOpenFilePicker) {
+                alert('このブラウザは直接上書き保存に対応していません。通常の「JSONを読み込む」ボタンでファイルを読み込み、保存時はダウンロードになります。');
+                return;
+            }
+
+            try {
+                const [handle] = await window.showOpenFilePicker({
+                    types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }],
+                    excludeAcceptAllOption: false,
+                    multiple: false
+                });
+                if (!handle) return;
+                currentFileHandle = handle;
+
+                // read file content
+                const file = await handle.getFile();
+                currentFileName = file.name || currentFileName;
+                const text = await file.text();
+                try {
+                    const data = JSON.parse(text);
+                    if (Array.isArray(data)) {
+                        speciesData = data;
+                        updateDisplay();
+                        updateFileStatus(`${currentFileName} を開きました (上書き可能)`);
+                        updateStatus('ファイル読み込み成功 (上書き可能)');
+                    } else {
+                        alert('選択したファイルの形式が配列ではありません');
+                    }
+                } catch (e) {
+                    alert('JSON解析に失敗しました: ' + e.message);
+                }
+            } catch (err) {
+                console.warn('openWritableFile cancelled or failed', err);
+            }
+        }
+
         // ファイル保存
-        function saveToFile() {
+        async function saveToFile() {
+            // backward-compatible alias
+            await saveToCurrentFile();
+        }
+
+        // Save speciesData to the currently opened file if possible, otherwise download
+        async function saveToCurrentFile() {
             const dataStr = JSON.stringify(speciesData, null, 2);
-            const blob = new Blob([dataStr], {type: 'application/json'});
+            // If we have a FileSystem handle, write to it
+            if (currentFileHandle && currentFileHandle.createWritable) {
+                try {
+                    const writable = await currentFileHandle.createWritable();
+                    await writable.write(dataStr);
+                    await writable.close();
+                    updateStatus('ファイルを上書き保存しました');
+                    updateLastSaved();
+                    updateFileStatus(`${currentFileName || '開いているファイル' } に保存`);
+                    return;
+                } catch (err) {
+                    console.warn('write via handle failed, falling back to download', err);
+                }
+            }
+
+            // Fallback: trigger download
+            const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
-            
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'monster-species-' + new Date().toISOString().split('T')[0] + '.json';
+            a.download = currentFileName || ('monster-species-' + new Date().toISOString().split('T')[0] + '.json');
             a.click();
-            
             URL.revokeObjectURL(url);
-            updateStatus('ファイル保存完了');
+            updateStatus('ファイルをダウンロードしました（上書き不可）');
             updateLastSaved();
         }
 
@@ -571,6 +596,8 @@
 
             closeModal();
             updateDisplay();
+            // attempt to persist to opened file
+            saveToCurrentFile();
         }
 
         function deleteCurrentSpecies() {
@@ -582,6 +609,8 @@
                 closeModal();
                 updateDisplay();
                 updateStatus(`種族「${deletedName}」を削除しました`);
+                // persist change if file is opened
+                saveToCurrentFile();
             }
         }
 
@@ -591,6 +620,7 @@
                 speciesData.splice(index, 1);
                 updateDisplay();
                 updateStatus(`種族「${deletedName}」を削除しました`);
+                saveToCurrentFile();
             }
         }
 

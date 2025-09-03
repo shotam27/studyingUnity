@@ -78,5 +78,22 @@
     "rarity": "Uncommon",
     "category": "Beast",
     "createdAt": "2025-08-21T10:00:00.000Z"
+  },
+  {
+    "id": "species_1756900182586",
+    "name": "Sword Rabbit",
+    "description": "A cute rabbit with sword",
+    "basicStatus": {
+      "maxHP": 85,
+      "atk": 110,
+      "def": 85,
+      "spd": 120
+    },
+    "weakness": "Fang",
+    "strength": "Earth",
+    "rarity": "Common",
+    "category": "Beast",
+    "createdAt": "2025-09-03T11:49:42.586Z",
+    "updatedAt": "2025-09-03T11:49:42.586Z"
   }
 ]
