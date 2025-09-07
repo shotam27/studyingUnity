@@ -19,6 +19,10 @@ public class MonsterUI : MonoBehaviour
     [Header("Auto Generate")]
     [SerializeField] private bool autoGenerateUI = true;
 
+    [Header("Font")]
+    [Tooltip("Assign the GN-Koharuiro_Sunray SDF TMP Font Asset here")]
+    [SerializeField] private TMP_FontAsset myFont;
+
     private Monster currentMonster;
 
     private void Awake()
@@ -27,6 +31,24 @@ public class MonsterUI : MonoBehaviour
         {
             GenerateUI();
         }
+        // Apply assigned TMP font to existing/generated TMP texts
+        ApplyDefaultFont();
+    }
+
+    private void ApplyDefaultFont()
+    {
+        if (myFont == null) return;
+        // Apply to explicit serialized fields
+        if (nameText != null) nameText.font = myFont;
+        if (levelText != null) levelText.font = myFont;
+        if (hpText != null) hpText.font = myFont;
+        if (atkText != null) atkText.font = myFont;
+        if (defText != null) defText.font = myFont;
+        if (spdText != null) spdText.font = myFont;
+        if (statusText != null) statusText.font = myFont;
+        // Apply to any TMP children (covers generated elements)
+        var all = GetComponentsInChildren<TextMeshProUGUI>(true);
+        foreach (var t in all) t.font = myFont;
     }
 
     [ContextMenu("Generate UI")]

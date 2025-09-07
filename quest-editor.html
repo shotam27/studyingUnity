@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Quest Manager - Local Edition</title>
+    <link rel="stylesheet" href="quest-manager.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📜 Quest Manager</h1>
+            <p>ローカルJSONでクエストを管理・編集します（名前・ランク・出現モンスター・報酬）</p>
+        </div>
+
+        <div class="file-controls">
+            <input type="file" id="fileInput" accept=".json" style="display:none">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">📁 JSONを読み込む</button>
+            <button class="btn btn-success" onclick="saveToFile()">💾 JSONに保存</button>
+            <button class="btn btn-warning" onclick="exportBackup()">📤 バックアップ</button>
+            <span id="fileStatus">ファイル未読み込み</span>
+        </div>
+
+        <div id="dropZone">📄 JSONファイルをここにドラッグ&ドロップ</div>
+
+        <div class="controls">
+            <button class="btn btn-primary" onclick="openAddModal()">➕ 新しいクエストを追加</button>
+            <div class="search-box"><input id="searchInput" placeholder="🔍 クエスト名で検索..." oninput="renderList()"></div>
+            <select id="rankFilter" onchange="renderList()"><option value="">全ランク</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+        </div>
+
+        <div id="questGrid" class="quest-grid"></div>
+
+        <!-- Modal -->
+        <div id="modal" class="modal">
+            <div class="modal-content">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                    <h2 id="modalTitle">クエストを追加</h2>
+                    <button id="closeModal" class="btn">✖</button>
+                </div>
+
+                <div class="form-group"><label class="form-label">名前</label><input id="qName" class="form-input"></div>
+                <div class="form-group"><label class="form-label">ランク</label><input id="qRank" class="form-input" type="number" value="1" min="1"></div>
+
+                <div class="form-group"><label class="form-label">出現モンスター (カンマ区切り: Species名)</label><input id="qMonsters" class="form-input" placeholder="Flame Dragon, Slime"></div>
+
+                <div class="form-group"><label class="form-label">報酬 (形式: 名称:x,カンマ区切り)</label><input id="qRewards" class="form-input" placeholder="Gold:100, Flame Scale:1"></div>
+
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+                    <button class="btn btn-success" onclick="saveModal()">保存</button>
+                    <button class="btn btn-danger" onclick="closeModal()">閉じる</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar"><div id="statusLeft">Ready</div><div id="statusRight"></div></div>
+    </div>
+
+    <script>
+        let quests = [];
+        let currentFileName = null;
+        const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+        const modal = document.getElementById('modal');
+
+    console.log('Quest editor script loaded');
+
+    // Prevent accidental navigation when files are dropped outside the drop zone
+    window.addEventListener('dragover', (e) => { e.preventDefault(); });
+    window.addEventListener('drop', (e) => { e.preventDefault(); });
+
+    fileInput.addEventListener('change', (e) => { const f = e.target.files[0]; if (f) { console.log('File input selected:', f.name); readFile(f); } });
+
+    dropZone.addEventListener('dragenter', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); console.log('dragenter'); setStatus('File over drop zone'); });
+    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); console.log('dragleave'); setStatus('Ready'); });
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        setStatus('Processing drop...');
+        console.log('drop event:', e);
+        let f = null;
+        try {
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                f = e.dataTransfer.files[0];
+                console.log('Using dataTransfer.files ->', f.name);
+            } else if (e.dataTransfer && e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+                // Try to find a file-like item first
+                for (const it of e.dataTransfer.items) {
+                    console.log('item:', it.kind, it.type, it);
+                    if (it.kind === 'file' && it.getAsFile) {
+                        f = it.getAsFile();
+                        console.log('Found file via items ->', f && f.name);
+                        break;
+                    }
+                }
+                // If still no file, maybe the editor/preview provided the file contents as a string
+                if (!f) {
+                    for (const it of e.dataTransfer.items) {
+                        if (it.kind === 'string') {
+                            // Read the string content (as text) and try to parse it
+                            it.getAsString((s) => {
+                                console.log('Got string from dataTransfer.items:', s && s.slice(0,200));
+                                // If the dropped string looks like a Windows path, try to fetch via file:// when possible
+                                const windowsPathPattern = /^[a-zA-Z]:\\/;
+                                if (windowsPathPattern.test(s.trim())) {
+                                    // If page is served via file:// we can attempt file:// fetch; otherwise prompt the user
+                                    if (location.protocol === 'file:') {
+                                        setStatus('Dropped path detected, attempting to fetch local file...');
+                                        fetchLocalFileByPath(s.trim()).then(txt => {
+                                            if (txt != null) { readFromText(txt); currentFileName = s.split('\\').pop(); setStatus('Loaded from local path'); }
+                                            else { console.warn('Could not fetch local file; prompt user to use file picker'); alert('This browser cannot read local file paths via drag-drop. Use the "JSONを読み込む" button to open the file.'); setStatus('Use file picker'); }
+                                        }).catch(err => { console.error('Fetch by path failed', err); alert('Failed to load file by path. Use the "JSONを読み込む" button.'); setStatus('Fetch failed'); });
+                                    } else {
+                                        // Open the file picker so the user can select the file
+                                        console.warn('Browser blocks file:// access; opening file picker for manual selection');
+                                        alert('This browser cannot read local file paths from drag-drop. The file dialog will open; please select the JSON file.');
+                                        try { fileInput.click(); setStatus('Please select the file in the dialog'); } catch (ex) { console.error('Failed to open file dialog', ex); setStatus('Select file manually'); }
+                                    }
+                                } else {
+                                    try { readFromText(s); currentFileName = 'pasted.json'; setStatus('Loaded from dropped text'); } catch (ex) { console.error(ex); setStatus('Parse error'); }
+                                }
+                            });
+                            // stop after scheduling the read
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (ex) {
+            console.error('Error handling drop event:', ex);
+        }
+
+        if (f) { currentFileName = f.name || 'dropped-file'; readFile(f); }
+        else { console.warn('No file found in drop event; dataTransfer inspected in console'); setStatus('No file in drop'); }
+    });
+
+    // Try to fetch an absolute local file path using file:// when the page is served via file://
+    async function fetchLocalFileByPath(path) {
+        try {
+            // Normalize backslashes to forward slashes
+            let p = path.replace(/\\/g, '/');
+            // If it already starts with file://, use it
+            if (!p.startsWith('file://')) {
+                // Ensure we have three slashes after file: e.g. file:///C:/path
+                if (/^[a-zA-Z]:\//.test(p)) p = 'file:///' + p;
+            }
+            console.log('Attempting fetch for local file URL:', p);
+            // Only attempt fetch if page is loaded from file:// (some browsers block file:// fetch otherwise)
+            if (location.protocol !== 'file:') {
+                console.warn('Page not served via file://; refusing file:// fetch for security');
+                return null;
+            }
+            const resp = await fetch(p);
+            if (!resp.ok) { console.warn('Fetch returned not ok', resp.status); return null; }
+            const txt = await resp.text();
+            return txt;
+        } catch (ex) {
+            console.error('fetchLocalFileByPath error', ex);
+            return null;
+        }
+    }
+
+        function sanitizeText(raw) {
+            if (!raw || typeof raw !== 'string') return raw;
+            // Remove common markdown code fence wrappers like ```json ... ```
+            let s = raw.trim();
+            // If wrapped in triple-backticks, extract middle
+            const fenceMatch = s.match(/^```[a-zA-Z0-9]*\s*([\s\S]*)\s*```$/m);
+            if (fenceMatch && fenceMatch[1]) s = fenceMatch[1].trim();
+            // Try to find the first JSON array/object start and the last matching end
+            const firstBrace = Math.min(
+                ...['[','{'].map(ch=>{ const i = s.indexOf(ch); return i===-1?Number.MAX_SAFE_INTEGER:i; })
+            );
+            const lastBrace = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+            if (firstBrace !== Number.MAX_SAFE_INTEGER && lastBrace > firstBrace) {
+                s = s.substring(firstBrace, lastBrace+1).trim();
+            }
+            // Remove UTF-8 BOM if present
+            if (s.charCodeAt(0) === 0xFEFF) s = s.slice(1);
+            return s;
+        }
+
+        function readFile(file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                try {
+                    const raw = String(reader.result || '');
+                    const cleaned = sanitizeText(raw);
+                    let parsed;
+                    try { parsed = JSON.parse(cleaned); }
+                    catch (ex) {
+                        // Show helpful debug: snippet of raw and cleaned content
+                        console.error('JSON.parse failed on cleaned text:', ex);
+                        console.group('Parse debug');
+                        console.log('File name:', file.name);
+                        console.log('Raw preview:', raw.slice(0,400));
+                        console.log('Cleaned preview:', cleaned.slice(0,400));
+                        console.groupEnd();
+                        alert('JSON parse error. See console for raw/cleaned preview.');
+                        setStatus('Parse error');
+                        return;
+                    }
+
+                    // Support multiple shapes: plain array, { Quests: [...] }, or any object containing the array
+                    if (Array.isArray(parsed)) {
+                        quests = parsed;
+                    } else if (parsed && Array.isArray(parsed.Quests)) {
+                        quests = parsed.Quests;
+                    } else if (parsed && Array.isArray(parsed.quests)) {
+                        quests = parsed.quests;
+                    } else {
+                        // try to find the first array property
+                        let found = null;
+                        for (const k in parsed) {
+                            if (Array.isArray(parsed[k])) { found = parsed[k]; break; }
+                        }
+                        quests = found || [];
+                    }
+                    currentFileName = file.name;
+                    document.getElementById('fileStatus').innerText = currentFileName;
+                    renderList();
+                    setStatus('Loaded ' + currentFileName);
+                    console.log('Loaded quests:', quests);
+                } catch (err) {
+                    console.error('Failed parsing or processing JSON file:', err);
+                    alert('JSON parse error');
+                    setStatus('Parse error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function saveToFile() {
+            const blob = new Blob([JSON.stringify(quests, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = currentFileName || 'quests.json';
+            a.click();
+            setStatus('Saved ' + a.download);
+        }
+
+        
+
+        function exportBackup() { const blob = new Blob([JSON.stringify(quests, null, 2)], { type: 'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (currentFileName ? currentFileName.replace('.json','') + '-backup.json' : 'quests-backup.json'); a.click(); setStatus('Backup exported'); }
+
+        function openAddModal(quest) { document.getElementById('modalTitle').innerText = quest ? 'クエストを編集' : 'クエストを追加'; document.getElementById('qName').value = quest ? quest.Name : ''; document.getElementById('qRank').value = quest ? quest.Rank : 1; document.getElementById('qMonsters').value = quest ? (quest.Monsters || []).map(s=>s).join(', ') : ''; document.getElementById('qRewards').value = quest ? (quest.Rewards || []).map(r=>r.ItemName+':'+r.Quantity).join(', ') : ''; modal.style.display = 'block'; }
+        function closeModal() { modal.style.display = 'none'; }
+
+        function saveModal() {
+            const name = document.getElementById('qName').value.trim();
+            if (!name) { alert('名前必須'); return; }
+            const rank = parseInt(document.getElementById('qRank').value) || 1;
+            const monsters = document.getElementById('qMonsters').value.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+            const rewardsRaw = document.getElementById('qRewards').value.split(',').map(s=>s.trim()).filter(s=>s.length>0);
+            const rewards = rewardsRaw.map(r=>{ const parts=r.split(':'); return { ItemName: parts[0].trim(), Quantity: parseInt(parts[1])||1 }; });
+
+            const existing = quests.find(q=>q.Name===name);
+            const newQ = { Name: name, Rank: rank, Monsters: monsters, Rewards: rewards };
+            if (existing) {
+                Object.assign(existing, newQ);
+            } else {
+                quests.push(newQ);
+            }
+
+            closeModal(); renderList(); setStatus('Saved in memory');
+        }
+
+        function renderList() {
+            const grid = document.getElementById('questGrid'); grid.innerHTML = '';
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const rankFilter = document.getElementById('rankFilter').value;
+            const filtered = quests.filter(q=> (q.Name||'').toLowerCase().includes(query) && (rankFilter==='' || String(q.Rank)===rankFilter));
+
+            filtered.forEach((q, idx)=>{
+                const card = document.createElement('div'); card.className='quest-card';
+                const header = document.createElement('div'); header.className='quest-header';
+                const nameEl = document.createElement('div'); nameEl.className='quest-name'; nameEl.innerText=q.Name||'Unnamed';
+                const rankEl = document.createElement('div'); rankEl.className='quest-rank'; rankEl.innerText='Rank '+(q.Rank||1);
+                header.appendChild(nameEl); header.appendChild(rankEl);
+                card.appendChild(header);
+
+                const body = document.createElement('div'); body.className='quest-body';
+                const mons = document.createElement('div'); mons.className='row'; mons.innerHTML=(q.Monsters && q.Monsters.length)? q.Monsters.map(m=>`<span class="tag">${m}</span>`).join(' '):'<span class="tag">No monsters</span>';
+                const rewards = document.createElement('div'); rewards.className='row'; rewards.innerHTML=(q.Rewards && q.Rewards.length)? q.Rewards.map(r=>`<span class="tag">${r.ItemName} x${r.Quantity}</span>`).join(' '):'<span class="tag">No rewards</span>';
+                body.appendChild(mons); body.appendChild(rewards);
+                card.appendChild(body);
+
+                const actions = document.createElement('div'); actions.className='quest-actions';
+                const editBtn = document.createElement('button'); editBtn.className='btn btn-primary'; editBtn.innerText='編集'; editBtn.onclick=()=>openEdit(idx);
+                const delBtn = document.createElement('button'); delBtn.className='btn btn-danger'; delBtn.innerText='削除'; delBtn.onclick=()=>deleteQuest(idx);
+                actions.appendChild(editBtn); actions.appendChild(delBtn);
+                card.appendChild(actions);
+
+                grid.appendChild(card);
+            });
+
+            document.getElementById('statusLeft').innerText = `Quests: ${filtered.length} / ${quests.length}`;
+        }
+
+        function openEdit(index){ const q = quests[index]; openAddModal(q); }
+        function deleteQuest(index){ if(!confirm('Delete quest?')) return; quests.splice(index,1); renderList(); setStatus('Deleted'); }
+
+        function setStatus(text){ document.getElementById('statusRight').innerText = text; }
+
+        // drag/drop & sample
+        function createSample(){ quests = [{ Name:'炎の洞窟討伐', Rank:2, Monsters:['Flame Dragon'], Rewards:[{ItemName:'Gold',Quantity:100},{ItemName:'Flame Scale',Quantity:1}] }, { Name:'スライム退治', Rank:1, Monsters:['Slime'], Rewards:[{ItemName:'Gold',Quantity:20},{ItemName:'Slime Jelly',Quantity:2}] }]; renderList(); setStatus('Sample created'); }
+
+        function readFromText(text){
+            try{
+                const cleaned = sanitizeText(text);
+                const parsed = JSON.parse(cleaned);
+                if (Array.isArray(parsed)) quests = parsed;
+                else if (parsed && Array.isArray(parsed.Quests)) quests = parsed.Quests;
+                else if (parsed && Array.isArray(parsed.quests)) quests = parsed.quests;
+                else {
+                    let found = null;
+                    for (const k in parsed) { if (Array.isArray(parsed[k])) { found = parsed[k]; break; } }
+                    quests = found || [];
+                }
+                renderList(); setStatus('Loaded');
+                console.log('Loaded quests from text:', quests);
+            }catch(e){ console.error('Parse failed. Raw preview:', String(text).slice(0,400)); alert('JSON parse error; see console for preview.'); setStatus('Parse error'); }
+        }
+
+        function saveJSONToConsole(){ console.log(JSON.stringify(quests,null,2)); setStatus('Printed to console'); }
+
+        function saveToClipboard(){ navigator.clipboard.writeText(JSON.stringify(quests,null,2)).then(()=>setStatus('Copied to clipboard')).catch(()=>setStatus('Clipboard failed')); }
+
+        function readFileFromPath(path){ fetch(path).then(r=>r.text()).then(t=>readFromText(t)).catch(e=>setStatus('Fetch failed')); }
+
+        function readFileFallback(){ /* not implemented */ }
+
+        function readFileManual(){ fileInput.click(); }
+
+        function saveToLocalStorage(){ localStorage.setItem('quests', JSON.stringify(quests)); setStatus('Saved locally'); }
+        function loadFromLocalStorage(){ const data = localStorage.getItem('quests'); if(data) { quests = JSON.parse(data); renderList(); setStatus('Loaded from localStorage'); } }
+
+        function exportBackup(){ const blob=new Blob([JSON.stringify(quests,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(currentFileName?currentFileName.replace('.json','')+'-backup.json':'quests-backup.json'); a.click(); setStatus('Backup exported'); }
+
+        // quick init
+        window.onload = ()=>{ loadFromLocalStorage(); renderList(); setStatus('Ready'); };
+    </script>
+</body>
+</html>

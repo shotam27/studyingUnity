@@ -1,0 +1,38 @@
+{
+  "Quests": [
+    {
+      "Name": "炎の洞窟討伐",
+      "Rank": 2,
+      "Monsters": [
+        "Flame Dragon"
+      ],
+      "Rewards": [
+        {
+          "ItemName": "Gold",
+          "Quantity": 100
+        },
+        {
+          "ItemName": "Flame Scale",
+          "Quantity": 1
+        }
+      ]
+    },
+    {
+      "Name": "スライム退治",
+      "Rank": 1,
+      "Monsters": [
+        "Slime"
+      ],
+      "Rewards": [
+        {
+          "ItemName": "Gold",
+          "Quantity": 20
+        },
+        {
+          "ItemName": "Slime Jelly",
+          "Quantity": 2
+        }
+      ]
+    }
+  ]
+}

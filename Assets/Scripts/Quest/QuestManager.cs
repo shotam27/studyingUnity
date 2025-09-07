@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System.IO;
+using System.Text;
 
 /// <summary>
 /// クエストデータと簡易マネージャ
@@ -26,6 +28,12 @@ public class QuestManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    private void Start()
+    {
+        // Load quests from StreamingAssets on start. If not present, create sample quests and save them.
+        LoadOrCreateQuestsFromStreamingAssets();
     }
 
     #region CRUD
@@ -96,6 +104,85 @@ public class QuestManager : MonoBehaviour
         if (q2 != null) registeredQuests.Add(q2);
 
         Debug.Log($"Created {registeredQuests.Count} sample quests");
+
+        // Save the created sample quests into StreamingAssets/quests.json so the editor/web tools can edit them.
+        try
+        {
+            SaveQuestsToStreamingAssets();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"Failed to save sample quests to StreamingAssets: {ex.Message}");
+        }
+    }
+
+    private void LoadOrCreateQuestsFromStreamingAssets()
+    {
+        var path = Path.Combine(Application.streamingAssetsPath, "quests.json");
+        if (File.Exists(path))
+        {
+            try
+            {
+                LoadQuestsFromJsonFile(path);
+                Debug.Log($"Loaded {registeredQuests.Count} quests from {path}");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"Failed to load quests.json: {ex.Message}. Creating sample quests instead.");
+                CreateSampleQuests();
+            }
+        }
+        else
+        {
+            CreateSampleQuests();
+            Debug.Log($"No quests.json found at {path}. Created and saved sample quests.");
+        }
+    }
+
+    private void LoadQuestsFromJsonFile(string filePath)
+    {
+        var json = File.ReadAllText(filePath, Encoding.UTF8);
+        var wrapper = JsonUtility.FromJson<QuestJsonList>(json);
+        registeredQuests.Clear();
+        if (wrapper == null || wrapper.Quests == null) return;
+        foreach (var qj in wrapper.Quests)
+        {
+            var q = new Quest { Name = qj.Name, Rank = qj.Rank, Rewards = qj.Rewards ?? new List<Reward>() };
+            if (qj.Monsters != null)
+            {
+                foreach (var mname in qj.Monsters)
+                {
+                    var sp = MonsterManager.Instance?.GetMonsterTypeByName(mname);
+                    if (sp != null) q.Monsters.Add(sp);
+                    else Debug.LogWarning($"Species '{mname}' not found while loading quest '{q.Name}'");
+                }
+            }
+            registeredQuests.Add(q);
+        }
+    }
+
+    private void SaveQuestsToStreamingAssets()
+    {
+        var path = Path.Combine(Application.streamingAssetsPath, "quests.json");
+        var wrapper = new QuestJsonList { Quests = new List<QuestJson>() };
+        foreach (var q in registeredQuests)
+        {
+            var qj = new QuestJson { Name = q.Name, Rank = q.Rank, Rewards = q.Rewards ?? new List<Reward>() };
+            qj.Monsters = new List<string>();
+            if (q.Monsters != null)
+            {
+                foreach (var s in q.Monsters)
+                {
+                    qj.Monsters.Add(s?.SpeciesName ?? "");
+                }
+            }
+            wrapper.Quests.Add(qj);
+        }
+        var json = JsonUtility.ToJson(wrapper, true);
+        // Ensure directory exists
+        Directory.CreateDirectory(Application.streamingAssetsPath);
+        File.WriteAllText(path, json, Encoding.UTF8);
+        Debug.Log($"Saved {registeredQuests.Count} quests to {path}");
     }
 
     [ContextMenu("Debug: Print All Quests")]
@@ -112,6 +199,8 @@ public class QuestManager : MonoBehaviour
     }
 
     #endregion
+
+    
 }
 
 [System.Serializable]
@@ -128,4 +217,20 @@ public class Reward
 {
     public string ItemName;
     public int Quantity = 1;
+}
+
+// JSON-friendly DTOs for (de)serializing quests where Species are represented by name
+[System.Serializable]
+public class QuestJson
+{
+    public string Name;
+    public int Rank = 1;
+    public List<string> Monsters = new List<string>();
+    public List<Reward> Rewards = new List<Reward>();
+}
+
+[System.Serializable]
+public class QuestJsonList
+{
+    public List<QuestJson> Quests = new List<QuestJson>();
 }

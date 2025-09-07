@@ -14,7 +14,7 @@ public class initGame : MonoBehaviour
 
     [Header("初期モンスター設定")]
     [SerializeField] private string speciesName = "Flame Dragon";
-    [SerializeField] private string[] monsterNames = { "Blaze", "Ember" };
+    [SerializeField] private string[] monsterNames = { "Blaze", "ほのおくん" };
     [SerializeField] private int[] monsterLevels = { 5, 3 };
 
     private void Start()
