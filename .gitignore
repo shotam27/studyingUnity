@@ -1,4 +1,23 @@
-# This .gitignore file should be placed at the root of your Unity project directory
+# Unity defaults
+/Library/
+/Temp/
+/Obj/
+/Build/
+/[Bb]uilds/
+/[Ll]ogs/
+
+# TextMesh Pro generated assets and examples
+Assets/TextMesh Pro/Fonts/**
+Assets/TextMesh Pro/Examples/**
+Assets/TextMesh Pro/Resources/**
+
+# Generated TMP atlas/images
+**/TextMesh Pro/**/SDF/**
+**/*TMP*/**/*.asset
+
+# Optional: track font sources with LFS instead of storing binaries
+*.ttf
+*.otf# This .gitignore file should be placed at the root of your Unity project directory
 #
 # Get latest from https://github.com/github/gitignore/blob/master/Unity.gitignore
 #
