@@ -236,7 +236,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &1020991659
+--- !u!1 &970870947
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -244,74 +244,37 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1020991661}
-  - component: {fileID: 1020991660}
+  - component: {fileID: 970870949}
+  - component: {fileID: 970870948}
   m_Layer: 0
-  m_Name: "\u30BD\u30FC\u30C9\u30A6\u30B5\u30AE"
+  m_Name: monsterManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!212 &1020991660
-SpriteRenderer:
+--- !u!114 &970870948
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1020991659}
+  m_GameObject: {fileID: 970870947}
   m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 0
-  m_RayTraceProcedural: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 0
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 0
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_Sprite: {fileID: 21300000, guid: 2095f027352d45947986aa9dffaee6d9, type: 3}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
-  m_FlipY: 0
-  m_DrawMode: 0
-  m_Size: {x: 10, y: 10}
-  m_AdaptiveModeThreshold: 0.5
-  m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
-  m_MaskInteraction: 0
-  m_SpriteSortPoint: 0
---- !u!4 &1020991661
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 18eb1f7e1418e8441a73b7e3f8fd0687, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  allMonsterTypes: []
+  playerMonsters: []
+  maxPartySize: 6
+--- !u!4 &970870949
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1020991659}
+  m_GameObject: {fileID: 970870947}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -381,7 +344,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1822378993}
-  - component: {fileID: 1822378992}
+  - component: {fileID: 1822378994}
   m_Layer: 0
   m_Name: gameManager
   m_TagString: Untagged
@@ -389,31 +352,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1822378992
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1822378991}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a72d10e210a441147ae2378732a53669, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  controlledCamera: {fileID: 0}
-  speed: 10
-  sprintMultiplier: 2
-  smoothMovement: 1
-  smoothSpeed: 8
-  moveOnXY: 1
-  useBounds: 0
-  minBounds: {x: -50, y: -50}
-  maxBounds: {x: 50, y: 50}
-  allowZoom: 1
-  zoomSpeed: 5
-  minOrthoSize: 2
-  maxOrthoSize: 50
 --- !u!4 &1822378993
 Transform:
   m_ObjectHideFlags: 0
@@ -429,6 +367,91 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1822378994
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1822378991}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e57a3ee80ba73a469ae2349fc13e496, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  controlledCamera: {fileID: 419042565}
+  speed: 10
+  sprintMultiplier: 2
+  smoothMovement: 1
+  smoothSpeed: 8
+  moveOnXY: 1
+  useBounds: 0
+  minBounds: {x: -50, y: -50}
+  maxBounds: {x: 50, y: 50}
+  allowZoom: 1
+  zoomSpeed: 5
+  minOrthoSize: 2
+  maxOrthoSize: 50
+--- !u!1 &2034349576
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2034349578}
+  - component: {fileID: 2034349577}
+  m_Layer: 0
+  m_Name: DebugUnits
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2034349577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2034349576}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b51405b21b6e0ba4aa1504002d76cf11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  playerSpeciesName: "\u30BD\u30FC\u30C9\u30A6\u30B5\u30AE"
+  playerNickNames:
+  - "\u3046\u3055\uFF11"
+  - "\u3046\u3055\uFF12"
+  playerLevel: 1
+  enemySpeciesName: "\u3044\u3082\u3080\u3057\u304F\u3093"
+  enemyCount: 2
+  enemyLevel: 1
+  playerColumn: 1
+  enemyColumn: 6
+  startRowForPlayers: 1
+  startRowForEnemies: 1
+  unitVisualPrefab: {fileID: 0}
+  unitsParent: {fileID: 0}
+  createOnStart: 1
+  startWaitTimeout: 30
+--- !u!4 &2034349578
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2034349576}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -436,4 +459,5 @@ SceneRoots:
   - {fileID: 419042566}
   - {fileID: 1660955982}
   - {fileID: 1822378993}
-  - {fileID: 1020991661}
+  - {fileID: 2034349578}
+  - {fileID: 970870949}

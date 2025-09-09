@@ -65,8 +65,8 @@
   },
   {
     "id": "ice_bear_001",
-    "name": "Ice Bear",
-    "description": "A massive bear adapted to frozen wastelands",
+    "name": "いもむしくん",
+    "description": "かわいいいもむしくん",
     "basicStatus": {
       "maxHP": 140,
       "atk": 85,
@@ -76,12 +76,13 @@
     "weakness": "Fire",
     "strength": "Water",
     "rarity": "Uncommon",
-    "category": "Beast",
-    "createdAt": "2025-08-21T10:00:00.000Z"
+    "category": "Insect",
+    "createdAt": "2025-08-21T10:00:00.000Z",
+    "updatedAt": "2025-09-09T12:22:44.736Z"
   },
   {
     "id": "species_1756900182586",
-    "name": "Sword Rabbit",
+    "name": "ソードウサギ",
     "description": "A cute rabbit with sword",
     "basicStatus": {
       "maxHP": 85,
@@ -94,6 +95,6 @@
     "rarity": "Common",
     "category": "Beast",
     "createdAt": "2025-09-03T11:49:42.586Z",
-    "updatedAt": "2025-09-03T11:49:42.586Z"
+    "updatedAt": "2025-09-09T10:17:54.748Z"
   }
 ]

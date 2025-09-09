@@ -1,6 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using System.Reflection;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 using SpeciesManagement;
 
 public class MonsterManager : MonoBehaviour
@@ -255,6 +259,230 @@ public class MonsterManager : MonoBehaviour
             Monster monster = playerMonsters[i];
             Debug.Log($"[{i}] {monster.ToString()}");
         }
+    }
+
+    #endregion
+
+    #region Visual creation
+
+    // Create a Monster data object (adds to party) and a corresponding GameObject with a SpriteRenderer.
+    // speciesIdentifier: can be Species.SpeciesName or the JSON id from StreamingAssets.
+    // position: world position to place the visual. If null, placed at origin.
+    public GameObject CreateMonsterGameObject(string nickName, string speciesIdentifier, int level = 1, Vector3? position = null, Transform parent = null)
+    {
+        // 1) Try to resolve Species ScriptableObject by SpeciesName first
+        Species species = GetMonsterTypeByName(speciesIdentifier);
+
+        // 2) If not found, try to parse StreamingAssets monster-species.json to match id->name and then resolve
+        if (species == null)
+        {
+            try
+            {
+                string path = System.IO.Path.Combine(Application.streamingAssetsPath, "monster-species.json");
+                if (System.IO.File.Exists(path))
+                {
+                    string raw = System.IO.File.ReadAllText(path);
+                    // JsonUtility cannot parse a top-level array, so wrap it
+                    string wrapped = "{\"items\":" + raw + "}";
+                    var wrapper = JsonUtility.FromJson<StreamingSpeciesWrapper>(wrapped);
+                    if (wrapper != null && wrapper.items != null)
+                    {
+                        StreamingSpeciesEntry matched = null;
+                        // try match by id first
+                        foreach (var it in wrapper.items)
+                        {
+                            if (!string.IsNullOrEmpty(it.id) && it.id == speciesIdentifier)
+                            {
+                                matched = it;
+                                // found, try resolve by name
+                                species = GetMonsterTypeByName(it.name);
+                                break;
+                            }
+                        }
+
+                        // if still not found, try match by name in JSON
+                        if (species == null)
+                        {
+                            foreach (var it in wrapper.items)
+                            {
+                                if (!string.IsNullOrEmpty(it.name) && it.name == speciesIdentifier)
+                                {
+                                    matched = it;
+                                    species = GetMonsterTypeByName(it.name);
+                                    break;
+                                }
+                            }
+                        }
+
+                        // If we have a JSON entry but no Species ScriptableObject, create a runtime Species
+                        if (species == null && matched != null)
+                        {
+                            try
+                            {
+                                var runtimeSpecies = ScriptableObject.CreateInstance<Species>();
+                                var sType = typeof(Species);
+
+                                // set private fields via reflection
+                                var fName = sType.GetField("monsterTypeName", BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (fName != null) fName.SetValue(runtimeSpecies, matched.name);
+
+                                var fBasic = sType.GetField("basicStatus", BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (fBasic != null && matched.basicStatus != null)
+                                {
+                                    var bs = new BasicStatus(matched.basicStatus.maxHP, matched.basicStatus.atk, matched.basicStatus.def, matched.basicStatus.spd);
+                                    fBasic.SetValue(runtimeSpecies, bs);
+                                }
+
+                                // try load sprite from Resources/Images/{name}
+                                var fSprite = sType.GetField("sprite", BindingFlags.NonPublic | BindingFlags.Instance);
+                                if (fSprite != null)
+                                {
+                                    Sprite sp = null;
+                                    try { sp = Resources.Load<Sprite>("Images/" + matched.name); } catch { sp = null; }
+                                    fSprite.SetValue(runtimeSpecies, sp);
+                                }
+
+                                species = runtimeSpecies;
+                                Debug.Log($"CreateMonsterGameObject: created runtime Species for '{matched.name}' from StreamingAssets JSON.");
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogWarning($"CreateMonsterGameObject: failed to create runtime Species: {ex.Message}");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"CreateMonsterGameObject: failed reading StreamingAssets JSON: {ex.Message}");
+            }
+        }
+
+        if (species == null)
+        {
+            // If running in the Editor, try to auto-generate missing Species assets from StreamingAssets JSON
+            #if UNITY_EDITOR
+            try
+            {
+                Debug.Log($"CreateMonsterGameObject: Species '{speciesIdentifier}' not found. Attempting to generate Species assets from StreamingAssets (Editor-only)...");
+                // call the editor generator via menu command to avoid assembly dependency
+                UnityEditor.EditorApplication.ExecuteMenuItem("Tools/Generate Species From StreamingAssets");
+                // reload resources list
+                LoadMonsterTypesFromResources();
+                // retry resolving by name
+                species = GetMonsterTypeByName(speciesIdentifier);
+                if (species == null)
+                {
+                    Debug.LogError($"CreateMonsterGameObject: Species '{speciesIdentifier}' still not found after generating assets.");
+                    return null;
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"CreateMonsterGameObject: failed to auto-generate Species assets in Editor: {ex.Message}");
+                return null;
+            }
+            #else
+            Debug.LogError($"CreateMonsterGameObject: Species '{speciesIdentifier}' not found (Resources/Species or StreamingAssets). Aborting.");
+            return null;
+            #endif
+        }
+
+        // Create Monster data and add to manager
+        Monster monster = CreateAndAddMonster(species, nickName, level);
+        if (monster == null)
+        {
+            Debug.LogError("CreateMonsterGameObject: failed to create Monster data (party may be full).");
+            return null;
+        }
+
+        // Create visual GameObject
+        GameObject go = new GameObject($"MonsterGO_{monster.NickName}");
+        if (parent != null) go.transform.SetParent(parent, false);
+        else
+        {
+            // ensure a root exists
+            var root = GameObject.Find("MonstersRoot");
+            if (root == null)
+            {
+                root = new GameObject("MonstersRoot");
+            }
+            go.transform.SetParent(root.transform, false);
+        }
+
+        Vector3 pos = position ?? Vector3.zero;
+        go.transform.position = pos;
+
+        // Add SpriteRenderer if species has a Sprite
+        var sr = go.AddComponent<SpriteRenderer>();
+        if (species.Sprite != null)
+        {
+            sr.sprite = species.Sprite;
+        }
+        else
+        {
+            // fallback: try Resources/Images/{SpeciesName}
+            string candidate = species.SpeciesName;
+            var resSprite = Resources.Load<Sprite>("Images/" + candidate);
+            if (resSprite != null) sr.sprite = resSprite;
+            else
+            {
+                // fallback: create a simple placeholder sprite so visuals are visible in editor/play
+                Debug.LogWarning($"CreateMonsterGameObject: no sprite found for species '{species.SpeciesName}'. Creating placeholder sprite.");
+                try
+                {
+                    int size = 32;
+                    Texture2D tex = new Texture2D(size, size, TextureFormat.ARGB32, false);
+                    Color fill = new Color(0.8f, 0.2f, 0.8f, 1f); // magenta-ish placeholder
+                    Color[] cols = new Color[size * size];
+                    for (int i = 0; i < cols.Length; i++) cols[i] = fill;
+                    tex.SetPixels(cols);
+                    tex.Apply();
+
+                    Sprite placeholder = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+                    sr.sprite = placeholder;
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"CreateMonsterGameObject: failed to create placeholder sprite: {ex.Message}");
+                }
+            }
+        }
+
+        // Optional small component to link data <-> view
+        var link = go.AddComponent<MonsterViewLink>();
+        link.monster = monster;
+
+        return go;
+    }
+
+    // Helper classes for JSON parsing of StreamingAssets monster-species.json
+    [System.Serializable]
+    private class StreamingSpeciesWrapper { public StreamingSpeciesEntry[] items; }
+
+    [System.Serializable]
+    private class StreamingSpeciesEntry
+    {
+        public string id;
+        public string name;
+        public string description;
+        public StreamingBasicStatus basicStatus;
+    }
+
+    [System.Serializable]
+    private class StreamingBasicStatus
+    {
+        public int maxHP;
+        public int atk;
+        public int def;
+        public int spd;
+    }
+
+    // Simple component to attach to visuals to keep a reference to the Monster data object
+    private class MonsterViewLink : MonoBehaviour
+    {
+        public Monster monster;
     }
 
     #endregion

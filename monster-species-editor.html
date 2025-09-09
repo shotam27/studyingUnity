@@ -169,9 +169,32 @@
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
             setupEventListeners();
-            loadSampleData();
-            updateDisplay();
+            // Try load the project's StreamingAssets default JSON first
+            loadDefaultStreamingAssets().then(found => {
+                if (!found) loadSampleData();
+                updateDisplay();
+            });
         });
+
+        // Attempt to fetch Assets/StreamingAssets/monster-species.json when served via local server
+        async function loadDefaultStreamingAssets() {
+            const url = '/Assets/StreamingAssets/monster-species.json';
+            try {
+                const resp = await fetch(url, { cache: 'no-store' });
+                if (!resp.ok) return false;
+                const data = await resp.json();
+                if (Array.isArray(data)) {
+                    speciesData = data;
+                    currentFileName = 'monster-species.json';
+                    updateFileStatus('Loaded: ' + url);
+                    updateStatus('StreamingAssets JSON を読み込みました');
+                    return true;
+                }
+            } catch (e) {
+                // ignore — likely not available over file:// or server
+            }
+            return false;
+        }
 
         // イベントリスナー設定
     function setupEventListeners() {
@@ -330,7 +353,8 @@
         // Save speciesData to the currently opened file if possible, otherwise download
         async function saveToCurrentFile() {
             const dataStr = JSON.stringify(speciesData, null, 2);
-            // If we have a FileSystem handle, write to it
+
+            // If we already have an FS handle, write to it
             if (currentFileHandle && currentFileHandle.createWritable) {
                 try {
                     const writable = await currentFileHandle.createWritable();
@@ -341,11 +365,44 @@
                     updateFileStatus(`${currentFileName || '開いているファイル' } に保存`);
                     return;
                 } catch (err) {
-                    console.warn('write via handle failed, falling back to download', err);
+                    console.warn('write via handle failed, falling back to other methods', err);
                 }
             }
 
-            // Fallback: trigger download
+            // If File System Access API is available, try to obtain a handle to the project's monster-species.json
+            if (!currentFileHandle && window.showOpenFilePicker) {
+                try {
+                    // Ask the user to select the existing monster-species.json in the project folder
+                    const [handle] = await window.showOpenFilePicker({
+                        multiple: false,
+                        types: [{ description: 'JSON', accept: { 'application/json': ['.json'] } }]
+                    });
+                    if (handle) {
+                        currentFileHandle = handle;
+                        currentFileName = handle.name || 'monster-species.json';
+                    }
+                } catch (e) {
+                    // user cancelled or not permitted; fall through to save dialog/download
+                    console.debug('openFilePicker cancelled or failed', e && e.message);
+                }
+            }
+
+            // If we now have a handle (either earlier opened or just selected), write to it
+            if (currentFileHandle && currentFileHandle.createWritable) {
+                try {
+                    const writable = await currentFileHandle.createWritable();
+                    await writable.write(dataStr);
+                    await writable.close();
+                    updateStatus('ファイルを上書き保存しました');
+                    updateLastSaved();
+                    updateFileStatus(`${currentFileName || '開いているファイル' } に保存`);
+                    return;
+                } catch (err) {
+                    console.warn('write via handle failed, falling back to other methods', err);
+                }
+            }
+
+            // Fallback: trigger download (user must replace file manually)
             const blob = new Blob([dataStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -395,10 +452,10 @@
             renderSpeciesGrid();
         }
 
-        // 種族グリッド描画
+        // 種族グリッド描画（画像は同名PNGを探して表示、見つからなければプレースホルダ）
         function renderSpeciesGrid() {
             const grid = document.getElementById('speciesGrid');
-            
+
             if (filteredData.length === 0) {
                 grid.innerHTML = `
                     <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
@@ -411,57 +468,100 @@
 
             grid.innerHTML = filteredData.map((species, index) => `
                 <div class="species-card">
-                    <div class="species-header">
-                        <div>
-                            <div class="species-name">${species.name}</div>
-                            <div class="species-category">${species.category}</div>
+                    <div style="display:flex;gap:12px;align-items:center;">
+                        <img id="species-img-${index}" src="${getNoImageDataUrl()}" alt="noimage" style="width:64px;height:64px;object-fit:cover;border-radius:6px;background:#eee;" />
+                        <div style="flex:1;">
+                            <div class="species-name">${escapeHtml(species.name || '')}</div>
+                            <div class="species-category">${escapeHtml(species.category || '')}</div>
                         </div>
-                        <div class="element-tag ${species.rarity.toLowerCase()}" 
-                             style="background-color: ${getRarityColor(species.rarity)};">
-                            ${species.rarity}
+                        <div class="element-tag ${species.rarity.toLowerCase()}" style="background-color: ${getRarityColor(species.rarity)};">
+                            ${escapeHtml(species.rarity)}
                         </div>
                     </div>
-                    
+
                     <div class="species-stats">
-                        <div class="stat-item">
-                            <span class="stat-label">HP</span>
-                            <span class="stat-value">${species.basicStatus.maxHP}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">ATK</span>
-                            <span class="stat-value">${species.basicStatus.atk}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">DEF</span>
-                            <span class="stat-value">${species.basicStatus.def}</span>
-                        </div>
-                        <div class="stat-item">
-                            <span class="stat-label">SPD</span>
-                            <span class="stat-value">${species.basicStatus.spd}</span>
-                        </div>
+                        <div class="stat-item"><span class="stat-label">HP</span><span class="stat-value">${species.basicStatus.maxHP}</span></div>
+                        <div class="stat-item"><span class="stat-label">ATK</span><span class="stat-value">${species.basicStatus.atk}</span></div>
+                        <div class="stat-item"><span class="stat-label">DEF</span><span class="stat-value">${species.basicStatus.def}</span></div>
+                        <div class="stat-item"><span class="stat-label">SPD</span><span class="stat-value">${species.basicStatus.spd}</span></div>
                     </div>
-                    
+
                     <div class="species-elements">
-                        <div class="element-tag weakness">弱点: ${species.weakness}</div>
-                        <div class="element-tag strength">強み: ${species.strength}</div>
+                        <div class="element-tag weakness">弱点: ${escapeHtml(species.weakness)}</div>
+                        <div class="element-tag strength">強み: ${escapeHtml(species.strength)}</div>
                     </div>
-                    
+
                     ${species.description ? `
                         <div style="margin: 10px 0; padding: 10px; background-color: #f8f9fa; border-radius: 4px; font-size: 0.9em; color: #666;">
-                            ${species.description}
+                            ${escapeHtml(species.description)}
                         </div>
                     ` : ''}
-                    
+
                     <div class="species-actions">
-                        <button class="btn btn-primary" onclick="editSpecies(${speciesData.indexOf(species)})">
-                            ✏️ 編集
-                        </button>
-                        <button class="btn btn-danger" onclick="deleteSpecies(${speciesData.indexOf(species)})">
-                            🗑️ 削除
-                        </button>
+                        <button class="btn btn-primary" onclick="editSpecies(${speciesData.indexOf(species)})">✏️ 編集</button>
+                        <button class="btn btn-danger" onclick="deleteSpecies(${speciesData.indexOf(species)})">🗑️ 削除</button>
                     </div>
                 </div>
             `).join('');
+
+            // 非同期で各種族に対応する画像ファイルを探して img.src を差し替える
+            filteredData.forEach((species, index) => {
+                findImageUrlForSpecies(species).then(url => {
+                    if (!url) return;
+                    const img = document.getElementById(`species-img-${index}`);
+                    if (img) img.src = url;
+                }).catch(() => {
+                    // ignore
+                });
+            });
+        }
+
+        // エスケープユーティリティ
+        function escapeHtml(str) {
+            return String(str || '').replace(/[&<>"']/g, function(m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+        }
+
+        // プレースホルダSVGをDataURLで返す
+        function getNoImageDataUrl() {
+            const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='%23f3f4f6'/><text x='50%' y='50%' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='Arial, Helvetica, sans-serif' font-size='12'>No Image</text></svg>`;
+            return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+        }
+
+        // 種族に対応する画像候補を順に試して存在する最初のURLを返す（なければ null）
+        async function findImageUrlForSpecies(species) {
+            // Search only in Assets/Images by species name (no id search), try common extensions
+            const nameRaw = (species.name || '').trim();
+            if (!nameRaw) return null;
+            const nameSafe = nameRaw.replace(/[^a-zA-Z0-9_\-\.]/g, '_');
+            const nameLower = nameSafe.toLowerCase();
+
+            const exts = ['png', 'jpg', 'jpeg', 'webp'];
+            const candidates = [];
+
+            // First try URL-encoded raw name (supports Japanese filenames)
+            const encodedName = encodeURIComponent(nameRaw);
+            for (const e of exts) candidates.push(`Assets/Images/${encodedName}.${e}`);
+
+            // Then try sanitized versions
+            for (const e of exts) {
+                candidates.push(`Assets/Images/${nameSafe}.${e}`);
+                candidates.push(`Assets/Images/${nameLower}.${e}`);
+            }
+
+            for (const p of candidates) {
+                try {
+                    console.debug('Checking image:', p);
+                    const r = await fetch(p, { method: 'GET' });
+                    if (r && r.ok) {
+                        console.debug('Found image for', nameRaw, '->', p);
+                        return p;
+                    }
+                } catch (e) {
+                    // file:// or CORS may fail — ignore and continue
+                    console.debug('Fetch failed for', p, e && e.message);
+                }
+            }
+            return null;
         }
 
         // レアリティ色取得

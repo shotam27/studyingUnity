@@ -15,6 +15,12 @@ Assets/TextMesh Pro/Resources/**
 **/TextMesh Pro/**/SDF/**
 **/*TMP*/**/*.asset
 
+# Ignore project image folders (prevent committing art source / big image files)
+/[Aa]ssets/Images/
+/[Aa]ssets/Images/**
+/[Aa]ssets/Resources/Images/
+/[Aa]ssets/Resources/Images/**
+
 # Optional: track font sources with LFS instead of storing binaries
 *.ttf
 *.otf# This .gitignore file should be placed at the root of your Unity project directory
