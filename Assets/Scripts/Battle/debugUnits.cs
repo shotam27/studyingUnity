@@ -32,8 +32,7 @@ public class debugUnits : MonoBehaviour
     [Tooltip("Seconds to wait for MonsterManager.Instance. Set to 0 or negative to wait indefinitely.")]
     public float startWaitTimeout = 30f;
 
-    // Keep references to created visuals so they can be cleared
-    private List<GameObject> createdVisuals = new List<GameObject>();
+    // Keep references to created enemy monster GameObjects
     private List<GameObject> createdEnemyMonsters = new List<GameObject>();
 
     [ContextMenu("Create Debug Monsters")]
@@ -51,8 +50,7 @@ public class debugUnits : MonoBehaviour
             return;
         }
 
-        ClearVisuals();
-        createdEnemyMonsters.Clear();
+    createdEnemyMonsters.Clear();
 
         // Ensure unitsParent exists (parent for generated monster visuals)
         if (unitsParent == null)
@@ -79,8 +77,7 @@ public class debugUnits : MonoBehaviour
             }
             else
             {
-                // create a simple marker for quick debug visibility (also tracked in createdVisuals)
-                PlaceVisualAtGrid(nick, playerColumn, row, true);
+                // nothing extra to create; the monster GameObject itself will be the interactive visual
             }
         }
 
@@ -102,9 +99,6 @@ public class debugUnits : MonoBehaviour
             {
                 createdEnemyMonsters.Add(createdGO);
             }
-
-            // still create a simple marker for quick debug visibility
-            PlaceVisualAtGrid(nick, enemyColumn, row, false);
         }
 
         Debug.Log($"debugUnits: Created {playerNickNames.Length} player monsters and {createdEnemyMonsters.Count} enemies.");
@@ -143,63 +137,14 @@ public class debugUnits : MonoBehaviour
         CreateDebugUnits();
     }
 
-    void PlaceVisualAtGrid(string label, int gridX, int gridY, bool isPlayer)
-    {
-        // Find tile GameObject named x{gridX}y{gridY}
-        string tileName = $"x{gridX}y{gridY}";
-        var tileGO = GameObject.Find(tileName);
-        Vector3 pos;
-        if (tileGO == null)
-        {
-            Debug.LogWarning($"Tile '{tileName}' not found. Placing marker at fallback position for {label}.");
-            // fallback to estimated grid position (assuming 1 unit per cell)
-            pos = new Vector3(gridX, 0f, gridY);
-        }
-        else
-        {
-            pos = tileGO.transform.position;
-        }
-        GameObject vis = null;
-        if (unitVisualPrefab != null)
-        {
-            vis = Instantiate(unitVisualPrefab, unitsParent);
-            vis.transform.position = pos + new Vector3(0f, 0f, -0.1f);
-        }
-        else
-        {
-            // Create a simple marker
-            vis = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            vis.name = "MonsterVis_" + label;
-            vis.transform.SetParent(unitsParent, false);
-            vis.transform.position = pos + new Vector3(0f, 0f, -0.1f);
-            vis.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
-            var rend = vis.GetComponent<Renderer>();
-            rend.material = new Material(Shader.Find("Standard"));
-            rend.material.color = isPlayer ? Color.cyan : Color.magenta;
-
-            // Add a text label using 3D TextMesh if available
-            var textGO = new GameObject("Label");
-            textGO.transform.SetParent(vis.transform, false);
-            textGO.transform.localPosition = new Vector3(0f, 0.6f, 0f);
-            var tm = textGO.AddComponent<TextMesh>();
-            tm.text = label;
-            tm.characterSize = 0.15f;
-            tm.anchor = TextAnchor.MiddleCenter;
-            tm.alignment = TextAlignment.Center;
-            tm.color = Color.black;
-        }
-
-        createdVisuals.Add(vis);
-    }
-
     [ContextMenu("Clear Debug Visuals")]
     public void ClearVisuals()
     {
-        for (int i = createdVisuals.Count-1; i >= 0; i--)
+        for (int i = createdEnemyMonsters.Count - 1; i >= 0; i--)
         {
-            var go = createdVisuals[i];
+            var go = createdEnemyMonsters[i];
             if (go != null) Destroy(go);
         }
-        createdVisuals.Clear();
+        createdEnemyMonsters.Clear();
     }
 }

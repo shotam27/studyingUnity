@@ -411,48 +411,134 @@ public class MonsterManager : MonoBehaviour
             go.transform.SetParent(root.transform, false);
         }
 
-        Vector3 pos = position ?? Vector3.zero;
-        go.transform.position = pos;
+    Vector3 pos = position ?? Vector3.zero;
+    // Ensure monster visuals are placed at z = -1
+    pos.z = -1f;
+    go.transform.position = pos;
 
-        // Add SpriteRenderer if species has a Sprite
+        // Add SpriteRenderer
         var sr = go.AddComponent<SpriteRenderer>();
         if (species.Sprite != null)
         {
+            Debug.Log($"CreateMonsterGameObject: Using species.Sprite ('{species.Sprite.name}') for '{species.SpeciesName}'.");
             sr.sprite = species.Sprite;
         }
         else
         {
             // fallback: try Resources/Images/{SpeciesName}
             string candidate = species.SpeciesName;
+            Debug.Log($"CreateMonsterGameObject: species.Sprite is null for '{candidate}'. Trying Resources.Load('Images/{candidate}').");
             var resSprite = Resources.Load<Sprite>("Images/" + candidate);
-            if (resSprite != null) sr.sprite = resSprite;
+            if (resSprite != null)
+            {
+                Debug.Log($"CreateMonsterGameObject: Found sprite via Resources.Load: '{resSprite.name}'.");
+                sr.sprite = resSprite;
+            }
             else
             {
-                // fallback: create a simple placeholder sprite so visuals are visible in editor/play
-                Debug.LogWarning($"CreateMonsterGameObject: no sprite found for species '{species.SpeciesName}'. Creating placeholder sprite.");
+                Debug.Log($"CreateMonsterGameObject: Resources.Load returned null for 'Images/{candidate}'.");
+                // Editor-only fallback: search project assets for a sprite with matching name
+                #if UNITY_EDITOR
                 try
                 {
-                    int size = 32;
-                    Texture2D tex = new Texture2D(size, size, TextureFormat.ARGB32, false);
-                    Color fill = new Color(0.8f, 0.2f, 0.8f, 1f); // magenta-ish placeholder
-                    Color[] cols = new Color[size * size];
-                    for (int i = 0; i < cols.Length; i++) cols[i] = fill;
-                    tex.SetPixels(cols);
-                    tex.Apply();
-
-                    Sprite placeholder = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
-                    sr.sprite = placeholder;
+                    Debug.Log($"CreateMonsterGameObject: Editor fallback - searching AssetDatabase for sprite named '{candidate}'...");
+                    string[] guids = AssetDatabase.FindAssets($"t:Sprite {candidate}");
+                    Debug.Log($"CreateMonsterGameObject: AssetDatabase.FindAssets returned { (guids==null?0:guids.Length) } results for '{candidate}'.");
+                    if (guids != null && guids.Length > 0)
+                    {
+                        string foundPath = AssetDatabase.GUIDToAssetPath(guids[0]);
+                        Debug.Log($"CreateMonsterGameObject: Found candidate sprite at '{foundPath}'. Trying to load...");
+                        var edSprite = AssetDatabase.LoadAssetAtPath<Sprite>(foundPath);
+                        if (edSprite != null)
+                        {
+                            Debug.Log($"CreateMonsterGameObject: Successfully loaded editor Sprite '{edSprite.name}' from '{foundPath}'. Assigning to renderer.");
+                            sr.sprite = edSprite;
+                            // Also attach to runtime Species instance so future creations reuse it
+                            try
+                            {
+                                var sType = typeof(Species);
+                                var fSprite = sType.GetField("sprite", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                                if (fSprite != null) fSprite.SetValue(species, edSprite);
+                            }
+                            catch (System.Exception ex)
+                            {
+                                Debug.LogWarning($"CreateMonsterGameObject: failed to set runtime Species.sprite via reflection: {ex.Message}");
+                            }
+                        }
+                    }
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogWarning($"CreateMonsterGameObject: failed to create placeholder sprite: {ex.Message}");
+                    Debug.LogWarning($"CreateMonsterGameObject: Editor fallback search failed: {ex.Message}");
+                }
+                #endif
+
+                // Only create a placeholder if no sprite was successfully assigned
+                if (sr.sprite == null)
+                {
+                    Debug.LogWarning($"CreateMonsterGameObject: no sprite found for species '{species.SpeciesName}'. Creating placeholder sprite.");
+                    try
+                    {
+                        int size = 32;
+                        Texture2D tex = new Texture2D(size, size, TextureFormat.ARGB32, false);
+                        Color fill = new Color(0.8f, 0.2f, 0.8f, 1f); // magenta-ish placeholder
+                        Color[] cols = new Color[size * size];
+                        for (int i = 0; i < cols.Length; i++) cols[i] = fill;
+                        tex.SetPixels(cols);
+                        tex.Apply();
+
+                        Sprite placeholder = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+                        sr.sprite = placeholder;
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"CreateMonsterGameObject: failed to create placeholder sprite: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Debug.Log($"CreateMonsterGameObject: Using assigned sprite '{sr.sprite.name}' for '{species.SpeciesName}'.");
                 }
             }
+        }
+
+        // ensure there is a Collider2D so the object is clickable in the scene
+        var existingCollider = go.GetComponent<Collider2D>();
+        if (existingCollider == null)
+        {
+            var col = go.AddComponent<CircleCollider2D>();
+            // set a reasonable radius if the sprite has bounds
+            try
+            {
+                if (sr.sprite != null)
+                {
+                    col.radius = Mathf.Max(sr.sprite.bounds.extents.x, sr.sprite.bounds.extents.y);
+                }
+            }
+            catch { }
+        }
+
+        // ensure the Command component exists so clicking opens the menu
+        var cmd = go.GetComponent<Command>();
+        if (cmd == null)
+        {
+            go.AddComponent<Command>();
         }
 
         // Optional small component to link data <-> view
         var link = go.AddComponent<MonsterViewLink>();
         link.monster = monster;
+
+        // Scale down sprite visuals to 0.1 (10%)
+        try
+        {
+            go.transform.localScale = Vector3.one * 0.1f;
+            Debug.Log($"CreateMonsterGameObject: Set visual scale to {go.transform.localScale} for '{monster.NickName}'");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogWarning($"CreateMonsterGameObject: failed to set visual scale: {ex.Message}");
+        }
 
         return go;
     }

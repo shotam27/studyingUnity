@@ -6,6 +6,7 @@ public static class SpeciesAssetGenerator
 {
     private const string ResourcesFolder = "Assets/Resources";
     private const string MonsterTypesFolder = "Assets/Resources/MonsterTypes";
+    private const string MonsterPrefabsFolder = "Assets/Resources/MonsterTypes/Prefabs";
     private const string ImagesFolderResources = "Images"; // Resources/Images/{name}
 
     [MenuItem("Tools/Generate Species From StreamingAssets")]
@@ -64,21 +65,45 @@ public static class SpeciesAssetGenerator
                 if (pDef != null) pDef.intValue = it.basicStatus.def;
                 if (pSpd != null) pSpd.intValue = it.basicStatus.spd;
             }
+            
+            // Prepare variable for sprite lookup and later prefab creation
+            Sprite sprite = null;
 
             // Try assign sprite from Resources/Images/{name} first, then search project assets for a matching Sprite
             var propSprite = so.FindProperty("sprite");
             if (propSprite != null)
             {
-                Sprite sp = null;
                 // try Resources/Images/{name}
-                try { sp = Resources.Load<Sprite>(Path.Combine(ImagesFolderResources, it.name)); } catch { sp = null; }
-                if (sp == null)
+                try
                 {
-                    try { sp = Resources.Load<Sprite>(Path.Combine(ImagesFolderResources, SanitizeFileName(it.name))); } catch { sp = null; }
+                    string resPath = Path.Combine(ImagesFolderResources, it.name);
+                    Debug.Log($"SpeciesAssetGenerator: Trying Resources.Load<Sprite>('{resPath}') for '{it.name}'");
+                    sprite = Resources.Load<Sprite>(resPath);
+                    Debug.Log(sprite == null ? $"SpeciesAssetGenerator: Resources.Load returned null for '{resPath}'" : $"SpeciesAssetGenerator: Resources.Load found sprite '{sprite.name}' at '{resPath}'");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"SpeciesAssetGenerator: Resources.Load threw for '{it.name}': {ex.Message}");
+                    sprite = null;
+                }
+                if (sprite == null)
+                {
+                    try
+                    {
+                        string resPath2 = Path.Combine(ImagesFolderResources, SanitizeFileName(it.name));
+                        Debug.Log($"SpeciesAssetGenerator: Trying Resources.Load<Sprite>('{resPath2}') (sanitized) for '{it.name}'");
+                        sprite = Resources.Load<Sprite>(resPath2);
+                        Debug.Log(sprite == null ? $"SpeciesAssetGenerator: Resources.Load returned null for '{resPath2}'" : $"SpeciesAssetGenerator: Resources.Load found sprite '{sprite.name}' at '{resPath2}'");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"SpeciesAssetGenerator: Resources.Load(sanitized) threw for '{it.name}': {ex.Message}");
+                        sprite = null;
+                    }
                 }
 
                 // If still null, search the project for a Sprite asset with the same name (or sanitized name)
-                if (sp == null)
+                if (sprite == null)
                 {
                     string[] searchNames = new[] { it.name, SanitizeFileName(it.name) };
                     foreach (var nameTry in searchNames)
@@ -86,39 +111,104 @@ public static class SpeciesAssetGenerator
                         if (string.IsNullOrEmpty(nameTry)) continue;
                         // Find sprite assets by name
                         string[] guids = AssetDatabase.FindAssets($"t:Sprite {nameTry}");
+                        Debug.Log($"SpeciesAssetGenerator: AssetDatabase.FindAssets for 't:Sprite {nameTry}' returned { (guids==null?0:guids.Length)} results.");
                         if (guids != null && guids.Length > 0)
                         {
                             string assetPathFound = AssetDatabase.GUIDToAssetPath(guids[0]);
+                            Debug.Log($"SpeciesAssetGenerator: Found GUID {guids[0]} -> path '{assetPathFound}'");
                             var loaded = AssetDatabase.LoadAssetAtPath<Sprite>(assetPathFound);
                             if (loaded != null)
                             {
-                                sp = loaded;
+                                Debug.Log($"SpeciesAssetGenerator: Loaded Sprite '{loaded.name}' from '{assetPathFound}'");
+                                sprite = loaded;
                                 break;
+                            }
+                            else
+                            {
+                                Debug.Log($"SpeciesAssetGenerator: LoadAssetAtPath<Sprite> returned null for '{assetPathFound}'");
                             }
                         }
                         // Try searching textures by name and load as Sprite if importer has sprite mode
-                        if (sp == null)
+                        if (sprite == null)
                         {
                             string[] texGuids = AssetDatabase.FindAssets(nameTry);
+                            Debug.Log($"SpeciesAssetGenerator: AssetDatabase.FindAssets('{nameTry}') returned { (texGuids==null?0:texGuids.Length)} results for generic search.");
                             foreach (var g in texGuids)
                             {
                                 string p = AssetDatabase.GUIDToAssetPath(g);
+                                Debug.Log($"SpeciesAssetGenerator: Checking asset at '{p}'");
                                 var maybeSprite = AssetDatabase.LoadAssetAtPath<Sprite>(p);
                                 if (maybeSprite != null)
                                 {
-                                    sp = maybeSprite;
+                                    Debug.Log($"SpeciesAssetGenerator: Found sprite '{maybeSprite.name}' at '{p}' via generic search.");
+                                    sprite = maybeSprite;
                                     break;
                                 }
                             }
-                            if (sp != null) break;
+                            if (sprite != null) break;
                         }
                     }
                 }
 
-                propSprite.objectReferenceValue = sp;
+                propSprite.objectReferenceValue = sprite;
             }
 
             so.ApplyModifiedProperties();
+
+            // Ensure prefab folder exists and create/update a prefab for this species with the Command component
+            try
+            {
+                if (!Directory.Exists(MonsterPrefabsFolder)) Directory.CreateDirectory(MonsterPrefabsFolder);
+                string prefabPath = Path.Combine(MonsterPrefabsFolder, fileName + ".prefab");
+
+                // If sprite exists, create or update prefab to include SpriteRenderer + Collider2D + Command
+                if (sprite != null)
+                {
+                    // Use PrefabUtility APIs to modify/create prefab contents
+                    var prefabRoot = PrefabUtility.LoadPrefabContents(prefabPath);
+                    bool wasCreated = false;
+                    if (prefabRoot == null)
+                    {
+                        prefabRoot = new GameObject(fileName);
+                        wasCreated = true;
+                    }
+
+                    // Ensure SpriteRenderer
+                    var sr = prefabRoot.GetComponent<SpriteRenderer>();
+                    if (sr == null) sr = prefabRoot.AddComponent<SpriteRenderer>();
+                    sr.sprite = sprite;
+
+                    // Ensure a 2D collider so OnMouseDown works (Command uses Collider2D)
+                    var col = prefabRoot.GetComponent<Collider2D>();
+                    if (col == null) prefabRoot.AddComponent<CircleCollider2D>();
+
+                    // Ensure Command component is attached
+                    var cmd = prefabRoot.GetComponent<Command>();
+                    if (cmd == null) prefabRoot.AddComponent<Command>();
+
+                    // Save or replace prefab
+                    PrefabUtility.SaveAsPrefabAsset(prefabRoot, prefabPath);
+                    if (wasCreated) GameObject.DestroyImmediate(prefabRoot);
+
+                    Debug.Log($"SpeciesAssetGenerator: Created/Updated prefab at '{prefabPath}' with Command and sprite '{sprite.name}'.");
+                }
+                else
+                {
+                    // No sprite: still ensure prefab exists with Command (empty visuals)
+                    if (!File.Exists(prefabPath))
+                    {
+                        var tempGO = new GameObject(fileName);
+                        tempGO.AddComponent<Command>();
+                        PrefabUtility.SaveAsPrefabAsset(tempGO, prefabPath);
+                        GameObject.DestroyImmediate(tempGO);
+                        Debug.Log($"SpeciesAssetGenerator: Created empty prefab at '{prefabPath}' with Command (no sprite available).");
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"SpeciesAssetGenerator: failed to create/update prefab for '{it.name}': {ex.Message}");
+            }
 
             if (isNew)
             {
