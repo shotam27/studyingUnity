@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using UnityEngine.EventSystems;
 
 // Simple command menu for monsters. Attach this to a monster GameObject (SpriteRenderer + Collider2D required).
@@ -103,32 +104,14 @@ public class Command : MonoBehaviour
         txtRT.offsetMin = Vector2.zero;
         txtRT.offsetMax = Vector2.zero;
 
-        var text = txtGO.AddComponent<Text>();
-        text.text = label;
-        text.alignment = TextAnchor.MiddleCenter;
-        text.color = Color.black;
-        // Use the legacy built-in runtime font; Arial.ttf is no longer valid in newer Unity versions.
-        try
-        {
-            var builtin = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (builtin != null)
-            {
-                text.font = builtin;
-            }
-            else
-            {
-                // Fallback: try to create a dynamic font from OS (best-effort)
-                Font osf = null;
-                try { osf = Font.CreateDynamicFontFromOSFont("Arial", 24); } catch { osf = null; }
-                text.font = osf;
-            }
-        }
-        catch
-        {
-            // Last resort: null (Unity will handle with default font)
-            text.font = null;
-        }
-        text.fontSize = 24;
+        var tmp = txtGO.AddComponent<TextMeshProUGUI>();
+        tmp.text = label;
+        tmp.alignment = TextAlignmentOptions.Center;
+        tmp.color = Color.black;
+        tmp.enableAutoSizing = false;
+        tmp.fontSize = 24;
+        // Do not block raycasts on the label so the Button receives clicks reliably
+        tmp.raycastTarget = false;
     }
 
     private void OnMoveClicked()
